@@ -1,0 +1,50 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+
+const app = express();
+
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Basic Health Check Route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'API is running' });
+});
+
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/enquiries', require('./routes/enquiryRoutes'));
+app.use('/api/quotations', require('./routes/quotationRoutes'));
+app.use('/api/qaps', require('./routes/qapRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/fields', require('./routes/fieldRoutes'));
+app.use('/api/roles', require('./routes/roleRoutes'));
+app.use('/api/follow-ups', require('./routes/followUpRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/customers', require('./routes/customerRoutes'));
+app.use('/api/files', require('./routes/uploadRoutes'));
+app.use('/api/email', require('./routes/emailRoutes'));
+
+// Global Search
+const { protect } = require('./middleware/auth');
+const { globalSearch } = require('./controllers/searchController');
+app.get('/api/search', protect, globalSearch);
+
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
+
+module.exports = app;

@@ -1,0 +1,248 @@
+const User = require('../models/User');
+const Token = require('../models/Token');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const otpUtils = require('../utils/otp');
+const ActivityLog = require('../models/ActivityLog');
+const Role = require('../models/Role');
+
+const signToken = (userId, role) => {
+  return jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
+
+const buildUserQuery = (identifier) => {
+  if (!identifier) return null;
+  identifier = identifier.trim();
+  if (identifier.includes('@')) {
+    return { email: identifier.toLowerCase().trim() };
+  } else {
+    let cleaned = identifier.replace(/\D/g, '');
+    if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.substring(2);
+    if (cleaned.startsWith('0')) cleaned = cleaned.replace(/^0+/, '');
+    if (!cleaned) return { mobile_number: identifier };
+    return { mobile_number: { $regex: cleaned + '$' } };
+  }
+};
+
+// @desc    Login
+// @route   POST /api/auth/login
+exports.login = async (req, res, next) => {
+  try {
+    const { mobile_number, email, password } = req.body;
+    const identifier = mobile_number || email;
+    
+    if (!identifier || !password) {
+      return res.status(400).json({ status: 'error', message: 'Please provide mobile/email and password' });
+    }
+
+    const query = buildUserQuery(identifier);
+    const user = await User.findOne(query);
+
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+    }
+
+    if (!user.is_active) {
+      return res.status(401).json({ status: 'error', message: 'Account is deactivated' });
+    }
+
+    user.last_login = new Date();
+    await user.save();
+
+    await ActivityLog.create({
+      user_id: user._id,
+      action: 'LOGIN',
+      module: 'AUTH',
+      details: `User logged in from ${req.ip}`
+    });
+
+    const roleDoc = await Role.findOne({ code: user.role });
+    let permissions = roleDoc ? Object.fromEntries(roleDoc.permissions || new Map()) : {};
+
+    // Additive secondary role merge
+    if (user.secondaryRole) {
+      const secRoleDoc = await Role.findOne({ code: user.secondaryRole });
+      if (secRoleDoc) {
+        const secPerms = Object.fromEntries(secRoleDoc.permissions || new Map());
+        // Union: grant permission if EITHER role grants it
+        for (const module of Object.keys(secPerms)) {
+          if (!permissions[module]) permissions[module] = {};
+          for (const action of Object.keys(secPerms[module])) {
+            permissions[module][action] = permissions[module][action] || secPerms[module][action];
+          }
+        }
+      }
+    }
+
+    const token = signToken(user._id, user.role);
+    res.status(200).json({ 
+      status: 'success', token, 
+      user: { 
+        id: user._id, name: user.name, 
+        role: user.role, secondaryRole: user.secondaryRole || null,
+        permissions 
+      } 
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Verify OTP / Invite
+// @route   POST /api/auth/verify
+exports.verifyToken = async (req, res, next) => {
+  try {
+    const { mobile_number, token } = req.body; // OTP flow sends mobile + otp, Invite sends just token
+    if (!token) return res.status(400).json({ status: 'error', message: 'Token/OTP is required' });
+
+    let query = {};
+    if (mobile_number) {
+      const userQuery = buildUserQuery(mobile_number);
+      const user = await User.findOne(userQuery);
+      if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+      query.user_id = user._id;
+    }
+
+    const tokenRecords = await Token.find(query);
+    let validRecord = null;
+    
+    for (let record of tokenRecords) {
+      if (record.expires_at > new Date() && await bcrypt.compare(token, record.token)) {
+        validRecord = record;
+        break;
+      }
+    }
+
+    if (!validRecord) {
+      return res.status(400).json({ status: 'error', message: 'Invalid or expired OTP/Token' });
+    }
+
+    res.status(200).json({ status: 'success', message: 'Token verified safely', data: { reference: validRecord._id } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Set Password
+// @route   POST /api/auth/set-password
+exports.setPassword = async (req, res, next) => {
+  try {
+    const { referenceId, new_password, confirm_password } = req.body; // Reference ID from verify step
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ status: 'error', message: 'Passwords do not match' });
+    }
+
+    const tokenRecord = await Token.findById(referenceId);
+    if (!tokenRecord) return res.status(400).json({ status: 'error', message: 'Invalid token reference' });
+
+    const user = await User.findById(tokenRecord.user_id);
+    user.password = new_password;
+    user.is_verified = true;
+    await user.save();
+
+    await Token.findByIdAndDelete(tokenRecord._id);
+
+    res.status(200).json({ status: 'success', data: { user } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({ is_active: true }).select('name role');
+    // Map to fullName format for frontend compatibility if needed
+    const formatted = users.map(u => ({ _id: u._id, fullName: u.name, role: u.role }));
+    res.status(200).json({ status: 'success', data: { users: formatted } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Forgot Password
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { mobile_number } = req.body;
+    const user = await User.findOne({ mobile_number });
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+    const rawOTP = otpUtils.generateOTP();
+    const hashedOTP = await otpUtils.hashToken(rawOTP);
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    await Token.create({ user_id: user._id, token: hashedOTP, type: 'OTP', expires_at: expiresAt });
+
+    console.log(`[AUTH MOCK] Forgot password OTP for ${mobile_number}: ${rawOTP}`);
+
+    res.status(200).json({ status: 'success', message: 'OTP sent to mobile number' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Update own profile (name, mobile)
+// @route   PATCH /api/auth/profile
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { fullName, mobile } = req.body;
+    const updateFields = {};
+    if (fullName) updateFields.name = fullName;
+    if (mobile) updateFields.mobile_number = mobile;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    const responseUser = {
+      _id: user._id,
+      fullName: user.name,
+      email: user.email,
+      mobile: user.mobile_number,
+      role: user.role,
+      isActive: user.is_active,
+      isVerified: user.is_verified,
+    };
+
+    res.status(200).json({ status: 'success', data: { user: responseUser } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Change own password
+// @route   PATCH /api/auth/change-password
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ status: 'error', message: 'Both current and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ status: 'error', message: 'New password must be at least 8 characters' });
+    }
+
+    const user = await User.findById(req.user._id);
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ status: 'error', message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    await ActivityLog.create({
+      user_id: user._id,
+      action: 'PASSWORD_CHANGE',
+      module: 'AUTH',
+      details: 'User changed their password'
+    });
+
+    res.status(200).json({ status: 'success', message: 'Password updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
