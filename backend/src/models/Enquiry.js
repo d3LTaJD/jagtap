@@ -25,7 +25,7 @@ const enquirySchema = new mongoose.Schema({
   requiredDeliveryDate: { type: Date },
   budgetFrom: { type: Number },
   budgetTo: { type: Number },
-  standardCode: { type: String, enum: ['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified'] },
+  standardCode: { type: String, enum: ['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified', ''] },
   thirdPartyInspection: { type: Boolean, default: false },
   specialRequirements: { type: String, maxlength: 400 },
   
