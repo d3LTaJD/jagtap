@@ -22,7 +22,7 @@ const StatCard = ({ title, value, icon: Icon, trend, colorClass = "brand", loadi
     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
       {/* Thick left border */}
       <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${styles[colorClass]}`} />
-      
+
       <div className="flex items-start justify-between mb-2 relative z-10 pl-2">
         <div>
           <h3 className="text-[13px] font-medium text-slate-500 mb-2">{title}</h3>
@@ -36,7 +36,7 @@ const StatCard = ({ title, value, icon: Icon, trend, colorClass = "brand", loadi
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      
+
       <div className="pl-2 mt-4">
         {trend && !loading && (
           <div className="flex items-center gap-2 text-xs">
@@ -103,14 +103,14 @@ const Dashboard = () => {
 
         // Build pipeline funnel from stage counts (keys must match Enquiry schema)
         const stages = [
-          { label: 'New Leads',      color: 'bg-blue-500',    count: s.byStatus?.['New'] || 0 },
-          { label: 'Contacted',      color: 'bg-violet-500',  count: s.byStatus?.['Contacted'] || 0 },
-          { label: 'Tech Review',    color: 'bg-cyan-500',    count: s.byStatus?.['Technical Review'] || 0 },
-          { label: 'Quotation Sent', color: 'bg-amber-500',   count: s.byStatus?.['Quoted'] || s.pendingQuotations || 0 },
-          { label: 'Negotiating',    color: 'bg-orange-500',  count: s.byStatus?.['Negotiating'] || 0 },
-          { label: 'Won',            color: 'bg-emerald-500', count: s.byStatus?.['Won'] || 0 },
-          { label: 'On Hold',        color: 'bg-orange-300',  count: s.byStatus?.['On Hold'] || 0 },
-          { label: 'Lost',           color: 'bg-red-400',     count: s.byStatus?.['Lost'] || 0 },
+          { label: 'New Leads', color: 'bg-blue-500', count: s.byStatus?.['New'] || 0 },
+          { label: 'Contacted', color: 'bg-violet-500', count: s.byStatus?.['Contacted'] || 0 },
+          { label: 'Tech Review', color: 'bg-cyan-500', count: s.byStatus?.['Technical Review'] || 0 },
+          { label: 'Quotation Sent', color: 'bg-amber-500', count: s.byStatus?.['Quoted'] || s.pendingQuotations || 0 },
+          { label: 'Negotiating', color: 'bg-orange-500', count: s.byStatus?.['Negotiating'] || 0 },
+          { label: 'Won', color: 'bg-emerald-500', count: s.byStatus?.['Won'] || 0 },
+          { label: 'On Hold', color: 'bg-orange-300', count: s.byStatus?.['On Hold'] || 0 },
+          { label: 'Lost', color: 'bg-red-400', count: s.byStatus?.['Lost'] || 0 },
         ];
         setPipeline(stages);
       } catch (err) {
@@ -142,11 +142,11 @@ const Dashboard = () => {
       ['Won Count', stats.wonCount],
       ['Lost Count', stats.lostCount],
     );
-    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `dashboard_report_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `dashboard_report_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
 
@@ -187,7 +187,7 @@ const Dashboard = () => {
 
       {/* ── KPI Visualizations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Lead Pipeline Funnel */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-8">
@@ -196,7 +196,7 @@ const Dashboard = () => {
             </h2>
 
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center items-center flex-1 py-10"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
           ) : (
@@ -204,16 +204,16 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={pipeline} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
                   <XAxis type="number" hide />
-                  <YAxis 
-                    type="category" 
-                    dataKey="label" 
-                    width={110} 
-                    tick={{ fontSize: 12, fontWeight: 600, fill: '#475569' }} 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    type="category"
+                    dataKey="label"
+                    width={110}
+                    tick={{ fontSize: 12, fontWeight: 600, fill: '#475569' }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <Tooltip 
-                    cursor={{ fill: '#f1f5f9', radius: 6 }} 
+                  <Tooltip
+                    cursor={{ fill: '#f1f5f9', radius: 6 }}
                     contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '13px' }}
                     formatter={(value) => [value, 'Count']}
                   />
@@ -241,20 +241,20 @@ const Dashboard = () => {
               <option>This Year</option>
             </select>
           </div>
-          
+
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={mockTimeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0}/>
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dx={-10} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   itemStyle={{ color: '#8b5cf6', fontWeight: 'bold' }}
                 />
                 <Area type="monotone" dataKey="leads" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
@@ -293,9 +293,9 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* My Tasks Widget */}
         <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-6 tracking-tight flex items-center">
@@ -305,7 +305,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
           ) : (
             <div className="space-y-6">
-              
+
               {/* Due Follow-ups */}
               <div>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Overdue / Due Today</h3>
@@ -368,7 +368,7 @@ const Dashboard = () => {
           <h2 className="text-lg font-bold text-slate-900 mb-6 tracking-tight flex items-center">
             <Activity className="w-5 h-5 mr-2 text-brand-600" /> Recent Follow-Ups
           </h2>
-          
+
           {loading ? (
             <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
           ) : recentActivity.length === 0 ? (
