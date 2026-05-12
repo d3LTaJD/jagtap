@@ -2,30 +2,49 @@ const mongoose = require('mongoose');
 const User = require('./src/models/User');
 require('dotenv').config();
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/jagtap-workflow').then(async () => {
+const seedAdmin = async () => {
   try {
-    let admin = await User.findOne({ email: 'admin@company.com' });
-    if (!admin) {
-      admin = await User.create({
-        name: 'Super Admin',
-        mobile_number: '0000000000',
-        email: 'admin@company.com',
-        password: 'password123',
-        role: 'SUPER_ADMIN',
-        is_active: true,
-        is_verified: true
-      });
-      console.log('Admin seeded successfully!');
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) throw new Error('MONGODB_URI not found in environment');
+
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(mongoUri);
+    console.log('Connected!');
+
+    const adminData = {
+      name: 'Super Admin',
+      mobile_number: '9876543210',
+      email: 'admin@jagtap.com',
+      password: 'adminpassword123',
+      role: 'SUPER_ADMIN',
+      department: 'Admin',
+      is_active: true,
+      is_verified: true
+    };
+
+    // Check if user exists
+    const existing = await User.findOne({ email: adminData.email });
+    if (existing) {
+      console.log('Admin user already exists. Updating password...');
+      existing.password = adminData.password;
+      await existing.save();
+      console.log('Updated successfully!');
     } else {
-      admin.password = 'password123'; // Will trigger pre-save hook to hash
-      await admin.save();
-      console.log('Admin already existed, reset password to password123');
+      console.log('Creating new Admin user...');
+      await User.create(adminData);
+      console.log('Created successfully!');
     }
+
+    console.log('-----------------------------------');
+    console.log('Login Email:    ' + adminData.email);
+    console.log('Login Password: ' + adminData.password);
+    console.log('-----------------------------------');
+
+    process.exit(0);
   } catch (err) {
     console.error('Error seeding admin:', err);
+    process.exit(1);
   }
-  process.exit(0);
-}).catch(err => {
-  console.error('DB Connection error:', err);
-  process.exit(1);
-});
+};
+
+seedAdmin();

@@ -6,12 +6,11 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: true, // Allow all origins
-  credentials: true,
+  origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.options('*', cors()); // Handle preflight for all routes
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
