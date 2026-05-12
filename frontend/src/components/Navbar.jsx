@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Menu, Bell, Search, Check, Loader2, FileText, Users, ClipboardList, X } from 'lucide-react';
+import { Menu, Bell, Search, Check, Loader2, FileText, Users, ClipboardList, X, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 
@@ -123,23 +123,26 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 h-16 flex flex-col justify-center px-4 sm:px-6 lg:px-8 z-20 shrink-0 shadow-sm relative">
+    <header className="glass-panel h-16 flex flex-col justify-center px-4 sm:px-6 lg:px-8 z-20 shrink-0 shadow-sm relative">
       <div className="flex items-center justify-between w-full h-full">
         <div className="flex items-center gap-4">
           <button onClick={onMenuClick} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"><Menu className="w-6 h-6" /></button>
 
-          {/* Global Search */}
+          {/* Global Search / AI Prompt */}
           <div ref={searchRef} className="relative hidden sm:block">
-            <div className={`flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border transition-all ${showSearch ? 'border-brand-500 bg-white ring-2 ring-brand-500/20' : 'border-transparent focus-within:border-brand-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-500/20'}`}>
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className={`flex items-center bg-white px-4 py-2.5 rounded-xl border border-slate-200 transition-all shadow-sm w-[400px] ${showSearch ? 'border-brand-400 ring-4 ring-brand-500/10' : 'hover:border-slate-300 focus-within:border-brand-400 focus-within:ring-4 focus-within:ring-brand-500/10'}`}>
+              <Sparkles className={`w-4 h-4 shrink-0 transition-colors ${showSearch || query ? 'text-brand-500' : 'text-slate-400'}`} />
               <input
                 type="text"
                 value={query}
                 onChange={handleSearchChange}
                 onFocus={() => { setShowSearch(true); if (query.length >= 2) doSearch(query); }}
-                placeholder="Search enquiries, customers…"
-                className="bg-transparent border-none outline-none focus:ring-0 text-sm ml-2 w-56 text-slate-700 placeholder:text-slate-400"
+                placeholder="AI Search anything..."
+                className="bg-transparent border-none outline-none focus:ring-0 text-sm ml-3 w-full text-slate-700 placeholder:text-slate-400 font-medium"
               />
+              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded ml-2 shrink-0">
+                <span>⌘</span><span>K</span>
+              </div>
               {query && (
                 <button onClick={() => { setQuery(''); setSearchResults([]); setShowSearch(false); }} className="text-slate-400 hover:text-slate-600">
                   <X className="w-3.5 h-3.5" />
@@ -237,13 +240,20 @@ const Navbar = ({ onMenuClick }) => {
             )}
           </div>
 
-          {/* User Avatar */}
-          <div
-            onClick={() => navigate('/app/profile')}
-            className="h-9 w-9 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center font-bold text-sm cursor-pointer hover:ring-2 hover:ring-brand-500 hover:ring-offset-2 transition-all select-none"
-            title={currentUser.fullName || 'My Profile'}
-          >
-            {getInitials(currentUser.fullName)}
+          {/* User Profile Block */}
+          <div className="flex items-center gap-3 ml-2 pl-4 border-l border-slate-200">
+            <div className="hidden md:block text-right">
+              <p className="text-sm font-bold text-slate-900 leading-tight">{currentUser.fullName || 'My Profile'}</p>
+              <p className="text-[10px] text-slate-500 font-medium mt-0.5 uppercase tracking-wider">{currentUser.role === 'SUPER_ADMIN' ? 'Administrator' : currentUser.role || 'User'}</p>
+            </div>
+            <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-brand-500 to-violet-500 hover:shadow-lg hover:shadow-brand-500/20 transition-all cursor-pointer group">
+              <div
+                onClick={() => navigate('/app/profile')}
+                className="h-10 w-10 bg-white text-slate-800 rounded-full flex items-center justify-center font-black text-sm select-none shadow-inner overflow-hidden"
+              >
+                {getInitials(currentUser.fullName)}
+              </div>
+            </div>
           </div>
         </div>
       </div>

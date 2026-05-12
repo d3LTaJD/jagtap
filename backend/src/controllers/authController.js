@@ -24,6 +24,42 @@ const buildUserQuery = (identifier) => {
   }
 };
 
+const buildLoginResponse = async (user) => {
+  const roleDoc = await Role.findOne({ code: user.role });
+  let permissions = roleDoc ? Object.fromEntries(roleDoc.permissions || new Map()) : {};
+
+  if (user.secondaryRole) {
+    const secRoleDoc = await Role.findOne({ code: user.secondaryRole });
+    if (secRoleDoc) {
+      const secPerms = Object.fromEntries(secRoleDoc.permissions || new Map());
+      for (const module of Object.keys(secPerms)) {
+        if (!permissions[module]) permissions[module] = {};
+        for (const action of Object.keys(secPerms[module])) {
+          permissions[module][action] = permissions[module][action] || secPerms[module][action];
+        }
+      }
+    }
+  }
+
+  const token = signToken(user._id, user.role);
+  return { 
+    status: 'success', token, 
+    user: { 
+      _id: user._id,
+      id: user._id, 
+      name: user.name, 
+      fullName: user.name,
+      email: user.email,
+      mobile: user.mobile_number,
+      isActive: user.is_active,
+      isVerified: user.is_verified,
+      role: user.role, 
+      secondaryRole: user.secondaryRole || null,
+      permissions 
+    } 
+  };
+};
+
 // @desc    Login
 // @route   POST /api/auth/login
 exports.login = async (req, res, next) => {
@@ -56,33 +92,8 @@ exports.login = async (req, res, next) => {
       details: `User logged in from ${req.ip}`
     });
 
-    const roleDoc = await Role.findOne({ code: user.role });
-    let permissions = roleDoc ? Object.fromEntries(roleDoc.permissions || new Map()) : {};
-
-    // Additive secondary role merge
-    if (user.secondaryRole) {
-      const secRoleDoc = await Role.findOne({ code: user.secondaryRole });
-      if (secRoleDoc) {
-        const secPerms = Object.fromEntries(secRoleDoc.permissions || new Map());
-        // Union: grant permission if EITHER role grants it
-        for (const module of Object.keys(secPerms)) {
-          if (!permissions[module]) permissions[module] = {};
-          for (const action of Object.keys(secPerms[module])) {
-            permissions[module][action] = permissions[module][action] || secPerms[module][action];
-          }
-        }
-      }
-    }
-
-    const token = signToken(user._id, user.role);
-    res.status(200).json({ 
-      status: 'success', token, 
-      user: { 
-        id: user._id, name: user.name, 
-        role: user.role, secondaryRole: user.secondaryRole || null,
-        permissions 
-      } 
-    });
+    const responsePayload = await buildLoginResponse(user);
+    res.status(200).json(responsePayload);
   } catch (err) {
     next(err);
   }
@@ -150,9 +161,9 @@ exports.setPassword = async (req, res, next) => {
 
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find({ is_active: true }).select('name role');
-    // Map to fullName format for frontend compatibility if needed
-    const formatted = users.map(u => ({ _id: u._id, fullName: u.name, role: u.role }));
+    const users = await User.find({ is_active: true }).select('name role department');
+    // Return both `name` and `fullName` for frontend compatibility
+    const formatted = users.map(u => ({ _id: u._id, name: u.name, fullName: u.name, role: u.role, department: u.department || '' }));
     res.status(200).json({ status: 'success', data: { users: formatted } });
   } catch (err) {
     next(err);

@@ -7,7 +7,9 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 import FollowUpPanel from '../components/FollowUpPanel';
+import TaskPanel from '../components/TaskPanel';
 import AttachmentManager from '../components/AttachmentManager';
 
 const PRIORITY_CONFIG = {
@@ -307,17 +309,24 @@ const EnquiryDetail = () => {
           {saving && <Loader2 className="w-4 h-4 animate-spin text-brand-600" />}
 
           {/* Assign */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center overflow-visible">
             <div className="px-3 py-1.5 bg-slate-50 border-r border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-wider">Assign</div>
-            <select
+            <AutocompleteSelect
               disabled={!isHighAuth}
+              options={[
+                { value: '', label: 'Unassigned' },
+                ...users.map(u => ({
+                  value: u._id,
+                  label: `${u.fullName || u.name}`,
+                  group: u.department || 'Other'
+                }))
+              ]}
               value={enquiry.assignedTo?._id || ''}
-              onChange={e => handleUpdate('assignedTo', e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold text-slate-700 py-1.5 pl-3 pr-8 focus:ring-0 disabled:opacity-60 cursor-pointer w-36"
-            >
-              <option value="">Unassigned</option>
-              {users.map(u => <option key={u._id} value={u._id}>{u.name || u.fullName}</option>)}
-            </select>
+              onChange={v => handleUpdate('assignedTo', v)}
+              placeholder="Assign to user..."
+              allowClear={false}
+              className="w-48"
+            />
           </div>
 
           {canEdit && (
@@ -436,8 +445,12 @@ const EnquiryDetail = () => {
           </div>
         </div>
 
-        {/* Right — Follow-up Engine */}
+        {/* Right — Sidebar Panels */}
         <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <TaskPanel enquiryId={id} />
+          </div>
+
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <FollowUpPanel enquiryId={id} currentUserRole={currentUser.role} />
           </div>
@@ -460,9 +473,13 @@ const EnquiryDetail = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Product Category</label>
-                  <select value={editForm.productCategory} onChange={e => setEditForm(prev => ({ ...prev, productCategory: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                    {['Pressure Vessel', 'Heat Exchanger', 'Storage Tank', 'Piping', 'Structural', 'Custom', 'Multiple'].map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <AutocompleteSelect
+                    options={['Pressure Vessel', 'Heat Exchanger', 'Storage Tank', 'Piping', 'Structural', 'Custom', 'Multiple']}
+                    value={editForm.productCategory}
+                    onChange={v => setEditForm(prev => ({ ...prev, productCategory: v }))}
+                    placeholder="Select category..."
+                    allowClear={false}
+                  />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Product Description</label>
@@ -470,9 +487,13 @@ const EnquiryDetail = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Source Channel</label>
-                  <select value={editForm.sourceChannel} onChange={e => setEditForm(prev => ({ ...prev, sourceChannel: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                    {['IndiaMart', 'GEM Portal', 'Email', 'WhatsApp', 'Reference', 'Exhibition', 'Verbal/Phone', 'Website', 'Cold Call', 'Walk-in'].map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <AutocompleteSelect
+                    options={['IndiaMart', 'GEM Portal', 'Email', 'WhatsApp', 'Reference', 'Exhibition', 'Verbal/Phone', 'Website', 'Cold Call', 'Walk-in']}
+                    value={editForm.sourceChannel}
+                    onChange={v => setEditForm(prev => ({ ...prev, sourceChannel: v }))}
+                    placeholder="Select source..."
+                    allowClear={false}
+                  />
                 </div>
                 {editForm.sourceChannel === 'IndiaMart' && (
                   <>
@@ -482,20 +503,23 @@ const EnquiryDetail = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Lead Genuineness</label>
-                      <select value={editForm.leadGenuineness} onChange={e => setEditForm(prev => ({ ...prev, leadGenuineness: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                        <option>Genuine</option>
-                        <option>Likely Genuine</option>
-                        <option>Suspect</option>
-                        <option>Junk</option>
-                      </select>
+                      <AutocompleteSelect
+                        options={['Genuine', 'Likely Genuine', 'Suspect', 'Junk']}
+                        value={editForm.leadGenuineness}
+                        onChange={v => setEditForm(prev => ({ ...prev, leadGenuineness: v }))}
+                        placeholder="Select..."
+                        allowClear={false}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Contact Method</label>
-                      <select value={editForm.indiaMartContactMethod} onChange={e => setEditForm(prev => ({ ...prev, indiaMartContactMethod: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                        <option>Call</option>
-                        <option>Message</option>
-                        <option>Both</option>
-                      </select>
+                      <AutocompleteSelect
+                        options={['Call', 'Message', 'Both']}
+                        value={editForm.indiaMartContactMethod}
+                        onChange={v => setEditForm(prev => ({ ...prev, indiaMartContactMethod: v }))}
+                        placeholder="Select..."
+                        allowClear={false}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">&nbsp;</label>
@@ -508,9 +532,13 @@ const EnquiryDetail = () => {
                 )}
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Standard / Code</label>
-                  <select value={editForm.standardCode} onChange={e => setEditForm(prev => ({ ...prev, standardCode: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                    {['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified'].map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  <AutocompleteSelect
+                    options={['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified']}
+                    value={editForm.standardCode}
+                    onChange={v => setEditForm(prev => ({ ...prev, standardCode: v }))}
+                    placeholder="Select standard..."
+                    allowClear={false}
+                  />
                 </div>
 
                 <div>
@@ -519,9 +547,13 @@ const EnquiryDetail = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Unit</label>
-                  <select value={editForm.unit} onChange={e => setEditForm(prev => ({ ...prev, unit: e.target.value }))} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none">
-                    {['NOS', 'SET', 'MT', 'KG', 'M', 'M2', 'Job'].map(u => <option key={u}>{u}</option>)}
-                  </select>
+                  <AutocompleteSelect
+                    options={['NOS', 'SET', 'MT', 'KG', 'M', 'M2', 'Job']}
+                    value={editForm.unit}
+                    onChange={v => setEditForm(prev => ({ ...prev, unit: v }))}
+                    placeholder="Select unit..."
+                    allowClear={false}
+                  />
                 </div>
 
                 <div>

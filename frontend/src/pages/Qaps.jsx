@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { PenTool, Search, Download, Loader2, Plus, X, RefreshCw } from 'lucide-react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import AutocompleteSelect from '../components/AutocompleteSelect';
+import { Can } from '../context/AbilityContext';
 
 const QapStatusBadge = ({ status }) => {
   const colors = {
@@ -109,10 +111,12 @@ const Qaps = () => {
               <input type="text" placeholder="Search QAPs..." className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
             </div>
           </div>
-          <button onClick={() => setShowNewModal(true)} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
-            <Plus className="w-4 h-4 mr-2" />
-            Generate QAP
-          </button>
+          <Can I="create" a="QAP">
+            <button onClick={() => setShowNewModal(true)} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Generate QAP
+            </button>
+          </Can>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
@@ -153,12 +157,14 @@ const Qaps = () => {
                         {new Date(qap.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {qap.status === 'Pending Director Approval' && (
-                          <button onClick={() => { setSelectedQapId(qap._id); setShowSignatureModal(true); }} className="inline-flex items-center px-3 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200 shadow-sm">
-                            <PenTool className="w-3.5 h-3.5 mr-1.5" />
-                            Sign
-                          </button>
-                        )}
+                        <Can I="edit" a="QAP">
+                          {qap.status === 'Pending Director Approval' && (
+                            <button onClick={() => { setSelectedQapId(qap._id); setShowSignatureModal(true); }} className="inline-flex items-center px-3 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200 shadow-sm">
+                              <PenTool className="w-3.5 h-3.5 mr-1.5" />
+                              Sign
+                            </button>
+                          )}
+                        </Can>
                         <button className="inline-flex items-center px-3 py-1.5 bg-white text-slate-600 hover:text-brand-600 hover:bg-slate-50 rounded-lg border border-slate-200 shadow-sm transition-colors">
                           <Download className="w-3.5 h-3.5 mr-1.5" />
                           PDF
@@ -188,12 +194,17 @@ const Qaps = () => {
               <form id="new-qap-form" onSubmit={handleGenerateQap} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Select Approved Quotation</label>
-                  <select required value={selectedQuote} onChange={e => setSelectedQuote(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                    <option value="" disabled>-- Select Quotation --</option>
-                    {quotationsForSelect.map(qt => (
-                      <option key={qt._id} value={qt._id}>{qt.quotationId} - {qt.customer?.companyName}</option>
-                    ))}
-                  </select>
+                  <AutocompleteSelect
+                    options={quotationsForSelect.map(qt => ({
+                      value: qt._id,
+                      label: `${qt.quotationId} - ${qt.customer?.companyName}`
+                    }))}
+                    value={selectedQuote}
+                    onChange={v => setSelectedQuote(v)}
+                    placeholder="-- Select Quotation --"
+                    required={true}
+                    allowClear={false}
+                  />
                   <p className="text-xs text-slate-500 mt-2">The system will automatically extract drawing references and applicable standards to generate the base inspection matrix.</p>
                 </div>
               </form>

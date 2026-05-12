@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
+import AutocompleteSelect from './AutocompleteSelect';
 
 /**
  * DynamicFormRenderer
@@ -141,17 +142,14 @@ const DynamicFormRenderer = ({ formContext, values = {}, onChange, readOnly = fa
 
       case 'Dropdown (Single)':
         return (
-          <select
+          <AutocompleteSelect
+            options={field.options || []}
             value={val}
+            onChange={(v) => handle(field.fieldName, v)}
+            placeholder={field.placeholder || 'Select...'}
             required={field.isRequired}
-            onChange={e => handle(field.fieldName, e.target.value)}
-            className={baseClass}
-          >
-            <option value="">{field.placeholder || 'Select...'}</option>
-            {field.options.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+            allowClear={!field.isRequired}
+          />
         );
 
       case 'Dropdown (Multi)':

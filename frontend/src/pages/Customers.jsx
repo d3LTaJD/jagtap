@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Search, Loader2, X, Pencil, ShieldAlert } from 'lucide-react';
+import { Users, UserPlus, Search, Loader2, X, Pencil, ShieldAlert, Trash2 } from 'lucide-react';
 import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -79,6 +80,18 @@ const Customers = () => {
     }
   };
 
+  const handleDelete = async (e, customer) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${customer.companyName}"? This action cannot be undone.`)) return;
+    try {
+      await api.delete(`/customers/${customer._id}`);
+      fetchCustomers(search);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting customer');
+    }
+  };
+
   if (loading && !customers.length) return <div className="p-8 flex justify-center min-h-[60vh] items-center"><Loader2 className="animate-spin w-8 h-8 text-brand-600" /></div>;
 
   return (
@@ -135,9 +148,14 @@ const Customers = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} className="text-slate-400 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-brand-50 rounded-lg">
-                      <Pencil className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} className="text-slate-400 hover:text-brand-600 p-1.5 hover:bg-brand-50 rounded-lg transition-colors" title="Edit">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={(e) => handleDelete(e, c)} className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -195,25 +213,23 @@ const Customers = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Customer Type</label>
-                    <select value={formData.customerType} onChange={e => setFormData({...formData, customerType: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                      <option>Government</option>
-                      <option>Private</option>
-                      <option>Export</option>
-                      <option>Trader</option>
-                      <option>EPC</option>
-                      <option>End User</option>
-                    </select>
+                    <AutocompleteSelect
+                      options={['Government', 'Private', 'Export', 'Trader', 'EPC', 'End User']}
+                      value={formData.customerType}
+                      onChange={v => setFormData({...formData, customerType: v})}
+                      placeholder="Select type..."
+                      allowClear={false}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Payment Terms</label>
-                    <select value={formData.paymentTerms} onChange={e => setFormData({...formData, paymentTerms: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                      <option>Advance</option>
-                      <option>30 days</option>
-                      <option>45 days</option>
-                      <option>60 days</option>
-                      <option>LC</option>
-                      <option>Against Delivery</option>
-                    </select>
+                    <AutocompleteSelect
+                      options={['Advance', '30 days', '45 days', '60 days', 'LC', 'Against Delivery']}
+                      value={formData.paymentTerms}
+                      onChange={v => setFormData({...formData, paymentTerms: v})}
+                      placeholder="Select terms..."
+                      allowClear={false}
+                    />
                   </div>
 
                   <div>
@@ -242,12 +258,25 @@ const Customers = () => {
               </form>
             </div>
             
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm">Cancel</button>
-              <button type="submit" form="customer-form" disabled={submitLoading} className="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center">
-                {submitLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Customer
-              </button>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between">
+              <div>
+                {editingCustomer && (
+                  <button 
+                    type="button" 
+                    onClick={(e) => { handleDelete(e, editingCustomer); setShowModal(false); }} 
+                    className="px-4 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-xl transition-colors shadow-sm flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm">Cancel</button>
+                <button type="submit" form="customer-form" disabled={submitLoading} className="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center">
+                  {submitLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save Customer
+                </button>
+              </div>
             </div>
           </div>
         </div>

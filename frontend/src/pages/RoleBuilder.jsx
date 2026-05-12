@@ -4,6 +4,7 @@ import {
   X, Loader2, CheckCircle2, AlertTriangle, UserCircle2 
 } from 'lucide-react';
 import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 
 const DEPARTMENTS = ['Sales', 'Design', 'QC', 'Purchase', 'Accounts', 'Production', 'Management', 'Admin'];
 
@@ -298,13 +299,13 @@ const RoleBuilder = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Department</label>
-                    <select
+                    <AutocompleteSelect
+                      options={DEPARTMENTS}
                       value={form.department}
-                      onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
-                    >
-                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                      onChange={v => setForm(f => ({ ...f, department: v }))}
+                      placeholder="Select department..."
+                      allowClear={false}
+                    />
                   </div>
 
                   <div>

@@ -30,6 +30,11 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/files', require('./routes/uploadRoutes'));
 app.use('/api/email', require('./routes/emailRoutes'));
+app.use('/api/tasks', require('./routes/taskRoutes'));
+app.use('/api/master-data', require('./routes/masterDataRoutes'));
+app.use('/api/vendors', require('./routes/vendorRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/calendar', require('./routes/calendarRoutes'));
 
 // Global Search
 const { protect } = require('./middleware/auth');

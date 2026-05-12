@@ -4,6 +4,7 @@ import {
   ChevronDown, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, RotateCcw, X
 } from 'lucide-react';
 import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 
 const FORM_CONTEXTS = ['Enquiry', 'Quotation', 'QAP', 'Product'];
 
@@ -386,13 +387,13 @@ const FieldBuilder = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Field Type *</label>
-                <select
+                <AutocompleteSelect
+                  options={FIELD_TYPES}
                   value={form.fieldType}
-                  onChange={e => setForm(f => ({ ...f, fieldType: e.target.value, options: [] }))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
-                >
-                  {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                  onChange={v => setForm(f => ({ ...f, fieldType: v, options: [] }))}
+                  placeholder="Select field type..."
+                  allowClear={false}
+                />
               </div>
 
               <div>
@@ -463,16 +464,16 @@ const FieldBuilder = () => {
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Conditional Logic</label>
                 <div className="space-y-2">
-                  <select
+                  <AutocompleteSelect
+                    options={[
+                      { value: '', label: 'Always visible' },
+                      ...fields.filter(f => f._id !== editingField?._id).map(f => ({ value: f.fieldName, label: `${f.fieldLabel} (${f.fieldName})` }))
+                    ]}
                     value={form.conditionalLogic.dependsOnField}
-                    onChange={e => setForm(f => ({ ...f, conditionalLogic: { ...f.conditionalLogic, dependsOnField: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
-                  >
-                    <option value="">Always visible</option>
-                    {fields.filter(f => f._id !== editingField?._id).map(f => (
-                      <option key={f._id} value={f.fieldName}>{f.fieldLabel} ({f.fieldName})</option>
-                    ))}
-                  </select>
+                    onChange={v => setForm(f => ({ ...f, conditionalLogic: { ...f.conditionalLogic, dependsOnField: v } }))}
+                    placeholder="Always visible"
+                    allowClear={true}
+                  />
                   {form.conditionalLogic.dependsOnField && (
                     <input
                       type="text"

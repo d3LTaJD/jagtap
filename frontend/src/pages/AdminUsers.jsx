@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, Loader2, AlertCircle, ShieldCheck, History, X, Clock } from 'lucide-react';
+import { Users, UserPlus, Shield, Loader2, AlertCircle, ShieldCheck, History, X, Clock, Trash2 } from 'lucide-react';
 import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 
 const ActivityLogModal = ({ user, onClose }) => {
   const [logs, setLogs] = useState([]);
@@ -72,6 +73,8 @@ const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [resetLoading, setResetLoading] = useState(null);
   const [selectedUserForLogs, setSelectedUserForLogs] = useState(null);
   const [formData, setFormData] = useState({
     name: '', displayName: '', mobile_number: '', email: '',
@@ -133,6 +136,53 @@ const AdminUsers = () => {
     } catch (err) {}
   };
 
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError(''); setSuccessMsg('');
+    try {
+      await api.put(`/admin/users/${editingUser._id}`, {
+        name: editingUser.name,
+        email: editingUser.email,
+        department: editingUser.department,
+        role: editingUser.role,
+        secondaryRole: editingUser.secondaryRole
+      });
+      setSuccessMsg('User details updated successfully.');
+      setEditingUser(null);
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error updating user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (user) => {
+    if (!window.confirm(`Are you sure you want to generate a new password reset link for ${user.name}?`)) return;
+    setResetLoading(user._id); setError(''); setSuccessMsg('');
+    try {
+      const res = await api.post(`/admin/users/${user._id}/reset-password`);
+      setSuccessMsg(`Reset link generated for ${user.name}: ${res.data.data.token}`); // Showing token for dev mode
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error generating reset link');
+    } finally {
+      setResetLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`CRITICAL WARNING: Are you sure you want to PERMANENTLY delete the user "${user.name}"?\n\nThis action cannot be undone.`)) return;
+    
+    setError(''); setSuccessMsg('');
+    try {
+      await api.delete(`/admin/users/${user._id}`);
+      setSuccessMsg(`User ${user.name} has been permanently deleted.`);
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error deleting user');
+    }
+  };
+
   if (loading && !users.length) return <div className="p-8 flex justify-center min-h-[60vh] items-center"><Loader2 className="animate-spin w-8 h-8 text-brand-600" /></div>;
 
   return (
@@ -178,43 +228,45 @@ const AdminUsers = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">System Role</label>
-              <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                {rolesLoading ? (
-                  <option disabled>Loading roles...</option>
-                ) : availableRoles.map(role => (
-                  <option key={role.code} value={role.code}>{role.name} ({role.code})</option>
-                ))}
-              </select>
+              <AutocompleteSelect
+                options={rolesLoading ? [{ value: '', label: 'Loading roles...' }] : availableRoles.map(role => ({ value: role.code, label: `${role.name} (${role.code})` }))}
+                value={formData.role}
+                onChange={v => setFormData({...formData, role: v})}
+                placeholder="Select role..."
+                allowClear={false}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Secondary Role <span className="text-slate-400 font-normal">(Optional — adds permissions)</span>
               </label>
-              <select value={formData.secondaryRole} onChange={e => setFormData({...formData, secondaryRole: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                <option value="">— None —</option>
-                {!rolesLoading && availableRoles
-                  .filter(r => r.code !== formData.role)
-                  .map(role => (
-                    <option key={role.code} value={role.code}>{role.name} ({role.code})</option>
-                  ))}
-              </select>
+              <AutocompleteSelect
+                options={[{ value: '', label: '— None —' }, ...(!rolesLoading ? availableRoles.filter(r => r.code !== formData.role).map(role => ({ value: role.code, label: `${role.name} (${role.code})` })) : [])]}
+                value={formData.secondaryRole}
+                onChange={v => setFormData({...formData, secondaryRole: v})}
+                placeholder="— None —"
+                allowClear={true}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
-              <select value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                <option value="">— Select Department —</option>
-                {['Sales','Design','QC','Purchase','Accounts','Production','Management','Admin'].map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+              <AutocompleteSelect
+                options={[{ value: '', label: '— Select Department —' }, ...['Sales','Design','QC','Purchase','Accounts','Production','Management','Admin'].map(d => d)]}
+                value={formData.department}
+                onChange={v => setFormData({...formData, department: v})}
+                placeholder="— Select Department —"
+                allowClear={true}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Login Method</label>
-              <select value={formData.loginMethod} onChange={e => setFormData({...formData, loginMethod: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                <option value="password">Password</option>
-                <option value="otp">OTP (Mobile)</option>
-                <option value="both">Both</option>
-              </select>
+              <AutocompleteSelect
+                options={[{ value: 'password', label: 'Password' }, { value: 'otp', label: 'OTP (Mobile)' }, { value: 'both', label: 'Both' }]}
+                value={formData.loginMethod}
+                onChange={v => setFormData({...formData, loginMethod: v})}
+                placeholder="Select login method..."
+                allowClear={false}
+              />
             </div>
             <div className="md:col-span-2 flex items-center justify-between pt-2">
               <label className="flex items-center text-sm text-slate-700 cursor-pointer">
@@ -275,13 +327,37 @@ const AdminUsers = () => {
                     {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => setSelectedUserForLogs(user)}
-                      className="inline-flex items-center px-3 py-1.5 bg-slate-50 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg border border-slate-200 transition-all font-bold text-xs"
-                    >
-                      <History className="w-3.5 h-3.5 mr-1.5" />
-                      Logs
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleResetPassword(user)}
+                        disabled={resetLoading === user._id}
+                        title="Force Password Reset"
+                        className="inline-flex items-center px-2.5 py-1.5 bg-orange-50 text-orange-600 hover:text-orange-700 hover:bg-orange-100 rounded-lg border border-orange-200 transition-all font-bold text-xs disabled:opacity-50"
+                      >
+                        {resetLoading === user._id ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 mr-1" />}
+                        Reset
+                      </button>
+                      <button 
+                        onClick={() => setEditingUser({...user, secondaryRole: user.secondaryRole || ''})}
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all font-bold text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => setSelectedUserForLogs(user)}
+                        className="inline-flex items-center px-3 py-1.5 bg-slate-50 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg border border-slate-200 transition-all font-bold text-xs"
+                      >
+                        <History className="w-3.5 h-3.5 mr-1.5" />
+                        Logs
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteUser(user)}
+                        title="Delete User"
+                        className="inline-flex items-center px-2 py-1.5 bg-red-50 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-lg border border-red-200 transition-all font-bold text-xs ml-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -297,6 +373,64 @@ const AdminUsers = () => {
 
       {selectedUserForLogs && (
         <ActivityLogModal user={selectedUserForLogs} onClose={() => setSelectedUserForLogs(null)} />
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-900">Edit User: {editingUser.name}</h2>
+              <button onClick={() => setEditingUser(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                  <input type="text" required value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input type="email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">System Role</label>
+                  <AutocompleteSelect
+                    options={rolesLoading ? [] : availableRoles.map(role => ({ value: role.code, label: `${role.name} (${role.code})` }))}
+                    value={editingUser.role}
+                    onChange={v => setEditingUser({...editingUser, role: v})}
+                    allowClear={false}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Secondary Role</label>
+                  <AutocompleteSelect
+                    options={[{ value: '', label: '— None —' }, ...(!rolesLoading ? availableRoles.filter(r => r.code !== editingUser.role).map(role => ({ value: role.code, label: `${role.name} (${role.code})` })) : [])]}
+                    value={editingUser.secondaryRole}
+                    onChange={v => setEditingUser({...editingUser, secondaryRole: v})}
+                    allowClear={true}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                  <AutocompleteSelect
+                    options={[{ value: '', label: '— Select Department —' }, ...['Sales','Design','QC','Purchase','Accounts','Production','Management','Admin'].map(d => d)]}
+                    value={editingUser.department}
+                    onChange={v => setEditingUser({...editingUser, department: v})}
+                    allowClear={true}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all">Cancel</button>
+                <button type="submit" disabled={loading} className="px-5 py-2 text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all flex items-center">
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

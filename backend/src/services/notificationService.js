@@ -19,7 +19,11 @@ exports.sendEmail = async ({ userId, subject, text }) => {
     const u = await User.findById(userId);
     if (!u || !u.email) return;
     if (!process.env.EMAIL_USER) {
-      console.log(`[Email Mock] To: ${u.email} | Subject: ${subject}`);
+      console.log(`\n========== [Email Mock] ==========`);
+      console.log(`To: ${u.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Body: \n${text}`);
+      console.log(`==================================\n`);
       return; 
     }
     await transporter.sendMail({ from: process.env.EMAIL_USER, to: u.email, subject, text });

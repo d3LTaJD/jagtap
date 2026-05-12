@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.1",
+    "@casl/react": "^6.0.0",
     "axios": "^1.6.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

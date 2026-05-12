@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../api/client';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 import AttachmentManager from '../components/AttachmentManager';
 import EmailComposerModal from '../components/EmailComposerModal';
 
@@ -181,38 +182,44 @@ const QuotationDetail = () => {
         <div className="flex items-center gap-3 flex-wrap">
           {updateLoading && <Loader2 className="w-4 h-4 animate-spin text-brand-600" />}
           
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center overflow-visible">
              <div className="px-3 py-1.5 bg-slate-50 border-r border-slate-200 text-xs font-bold text-slate-500">Assign</div>
-             <select 
+             <AutocompleteSelect
                disabled={!isDirector}
-               value={quotation.assignedTo || ''} 
-               onChange={e => handleUpdate({ assignedTo: e.target.value })}
-               className="bg-transparent border-none text-sm font-semibold text-slate-700 py-1.5 pl-3 pr-8 focus:ring-0 disabled:opacity-60 cursor-pointer w-32"
-             >
-               <option value="">Unassigned</option>
-               {users.map(u => (
-                 <option key={u._id} value={u._id}>{u.name || u.fullName}</option>
-               ))}
-             </select>
+               options={[
+                 { value: '', label: 'Unassigned' },
+                 ...users.map(u => ({
+                   value: u._id,
+                   label: `${u.fullName || u.name}`,
+                   group: u.department || 'Other'
+                 }))
+               ]}
+               value={quotation.assignedTo || ''}
+               onChange={v => handleUpdate({ assignedTo: v })}
+               placeholder="Assign to user..."
+               allowClear={false}
+               className="w-48"
+             />
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center overflow-hidden">
              <div className="px-3 py-1.5 bg-slate-50 border-r border-slate-200 text-xs font-bold text-slate-500">Status</div>
-             <select 
-               value={quotation.status} 
-               onChange={e => handleUpdate({ status: e.target.value })}
-               className="bg-transparent border-none text-sm font-semibold text-brand-700 py-1.5 pl-3 pr-8 focus:ring-0 disabled:opacity-60 cursor-pointer"
-             >
-               <option value="DRAFT">DRAFT</option>
-               <option value="TECH_REVIEW">TECH REVIEW</option>
-               <option value="PENDING_APPROVAL">PENDING APPROVAL</option>
-               {isDirector && (
-                 <>
-                   <option value="APPROVED">APPROVED</option>
-                   <option value="REJECTED">REJECTED</option>
-                 </>
-               )}
-             </select>
+             <AutocompleteSelect
+               options={[
+                 { value: 'DRAFT', label: 'DRAFT' },
+                 { value: 'TECH_REVIEW', label: 'TECH REVIEW' },
+                 { value: 'PENDING_APPROVAL', label: 'PENDING APPROVAL' },
+                 ...(isDirector ? [
+                   { value: 'APPROVED', label: 'APPROVED' },
+                   { value: 'REJECTED', label: 'REJECTED' },
+                 ] : []),
+               ]}
+               value={quotation.status}
+               onChange={v => handleUpdate({ status: v })}
+               placeholder="Select status..."
+               allowClear={false}
+               className="w-44"
+             />
           </div>
 
           {/* Approve / Reject — Director only */}

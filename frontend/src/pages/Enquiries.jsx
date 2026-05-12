@@ -3,6 +3,8 @@ import { Plus, Filter, FileText, ChevronRight, Loader2, X, Trash2, RefreshCw, Pe
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
+import AutocompleteSelect from '../components/AutocompleteSelect';
+import { Can } from '../context/AbilityContext';
 
 const StatusBadge = ({ status }) => {
   const colors = {
@@ -271,10 +273,12 @@ const Enquiries = () => {
             <Filter className="w-4 h-4 mr-2" />
             Filter {(filterStatus || filterCategory) ? '(Active)' : ''}
           </button>
-          <button onClick={() => { setEditingEnquiry(null); setShowNewModal(true); }} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
-            <Plus className="w-4 h-4 mr-2" />
-            New Enquiry
-          </button>
+          <Can I="create" a="Enquiry">
+            <button onClick={() => { setEditingEnquiry(null); setShowNewModal(true); }} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              New Enquiry
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -283,29 +287,25 @@ const Enquiries = () => {
         <div className="mb-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-4 animate-in slide-in-from-top-2 duration-200">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
-            <select
+            <AutocompleteSelect
+              options={['NEW','CONTACTED','QUALIFIED','Technical Review','Quoted','Negotiating','Won','On Hold','Abandoned','LOST']}
               value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
-            >
-              <option value="">All Statuses</option>
-              {['NEW','CONTACTED','QUALIFIED','Technical Review','Quoted','Negotiating','Won','On Hold','Abandoned','LOST'].map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+              onChange={v => setFilterStatus(v)}
+              placeholder="All Statuses"
+              allowClear={true}
+              className="min-w-[180px]"
+            />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Product Category</label>
-            <select
+            <AutocompleteSelect
+              options={['Pressure Vessel','Heat Exchanger','Storage Tank','Piping / Pipe Fabrication','Structural Fabrication','Custom Fabrication']}
               value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
-            >
-              <option value="">All Categories</option>
-              {['Pressure Vessel','Heat Exchanger','Storage Tank','Piping / Pipe Fabrication','Structural Fabrication','Custom Fabrication'].map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+              onChange={v => setFilterCategory(v)}
+              placeholder="All Categories"
+              allowClear={true}
+              className="min-w-[200px]"
+            />
           </div>
           <button
             onClick={() => { setFilterStatus(''); setFilterCategory(''); }}
@@ -385,13 +385,15 @@ const Enquiries = () => {
                         {new Date(enq.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={e => openEdit(e, enq)}
-                          className="text-slate-400 hover:text-brand-600 p-1.5 rounded-lg hover:bg-brand-50 transition-colors inline-flex items-center gap-1 opacity-0 group-hover:opacity-100"
-                          title="Edit Enquiry"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
+                        <Can I="edit" a="Enquiry">
+                          <button
+                            onClick={e => openEdit(e, enq)}
+                            className="text-slate-400 hover:text-brand-600 p-1.5 rounded-lg hover:bg-brand-50 transition-colors inline-flex items-center gap-1 opacity-0 group-hover:opacity-100"
+                            title="Edit Enquiry"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </Can>
                         <ChevronRight className="w-5 h-5 inline text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
                       </td>
                     </tr>
@@ -449,24 +451,37 @@ const Enquiries = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Product Category</label>
-                      <select value={formData.productCategory} onChange={e => setFormData({...formData, productCategory: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        {['Pressure Vessel', 'Heat Exchanger', 'Storage Tank', 'Piping', 'Structural', 'Custom', 'Multiple'].map(c => <option key={c}>{c}</option>)}
-                      </select>
+                      <AutocompleteSelect
+                        options={['Pressure Vessel', 'Heat Exchanger', 'Storage Tank', 'Piping', 'Structural', 'Custom', 'Multiple']}
+                        value={formData.productCategory}
+                        onChange={v => setFormData({...formData, productCategory: v})}
+                        placeholder="Select category..."
+                        allowClear={false}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Source Channel</label>
-                      <select value={formData.sourceChannel} onChange={e => setFormData({...formData, sourceChannel: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        {['IndiaMart', 'GEM Portal', 'Email', 'WhatsApp', 'Reference', 'Exhibition', 'Verbal/Phone', 'Website', 'Cold Call', 'Walk-in'].map(s => <option key={s}>{s}</option>)}
-                      </select>
+                      <AutocompleteSelect
+                        options={['IndiaMart', 'GEM Portal', 'Email', 'WhatsApp', 'Reference', 'Exhibition', 'Verbal/Phone', 'Website', 'Cold Call', 'Walk-in']}
+                        value={formData.sourceChannel}
+                        onChange={v => setFormData({...formData, sourceChannel: v})}
+                        placeholder="Select source..."
+                        allowClear={false}
+                      />
                     </div>
 
                     {/* Conditional Source Fields */}
                     {formData.sourceChannel === 'Email' && (
                       <div className="md:col-span-2 p-3 bg-brand-50/50 rounded-lg border border-brand-100 flex items-center gap-4">
                         <label className="text-sm font-medium text-brand-800 whitespace-nowrap">Received On:</label>
-                        <select value={formData.emailAccount} onChange={e => setFormData({...formData, emailAccount: e.target.value})} className="px-3 py-1.5 bg-white border border-brand-200 rounded-lg text-sm flex-1">
-                          <option>info@</option><option>sales@</option><option>yogesh@</option>
-                        </select>
+                        <AutocompleteSelect
+                          options={['info@', 'sales@', 'yogesh@']}
+                          value={formData.emailAccount}
+                          onChange={v => setFormData({...formData, emailAccount: v})}
+                          placeholder="Select account..."
+                          allowClear={false}
+                          className="flex-1"
+                        />
                       </div>
                     )}
                     {formData.sourceChannel === 'IndiaMart' && (
@@ -478,20 +493,23 @@ const Enquiries = () => {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-orange-800 mb-1">Lead Genuineness</label>
-                            <select value={formData.leadGenuineness} onChange={e => setFormData({...formData, leadGenuineness: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-orange-200 rounded-lg text-sm">
-                              <option>Genuine</option>
-                              <option>Likely Genuine</option>
-                              <option>Suspect</option>
-                              <option>Junk</option>
-                            </select>
+                            <AutocompleteSelect
+                              options={['Genuine', 'Likely Genuine', 'Suspect', 'Junk']}
+                              value={formData.leadGenuineness}
+                              onChange={v => setFormData({...formData, leadGenuineness: v})}
+                              placeholder="Select..."
+                              allowClear={false}
+                            />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-orange-800 mb-1">First Contact Method</label>
-                            <select value={formData.indiaMartContactMethod} onChange={e => setFormData({...formData, indiaMartContactMethod: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-orange-200 rounded-lg text-sm">
-                              <option>Call</option>
-                              <option>Message</option>
-                              <option>Both</option>
-                            </select>
+                            <AutocompleteSelect
+                              options={['Call', 'Message', 'Both']}
+                              value={formData.indiaMartContactMethod}
+                              onChange={v => setFormData({...formData, indiaMartContactMethod: v})}
+                              placeholder="Select..."
+                              allowClear={false}
+                            />
                           </div>
                           <div className="flex items-center gap-2 mt-6">
                             <input type="checkbox" id="detailsShared" checked={formData.detailsSharedByLead} onChange={e => setFormData({...formData, detailsSharedByLead: e.target.checked})} className="rounded text-brand-600 focus:ring-brand-500 w-4 h-4 border-slate-300" />
@@ -521,9 +539,13 @@ const Enquiries = () => {
                     {/* Standard & Specs */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Standard / Code</label>
-                      <select value={formData.standardCode} onChange={e => setFormData({...formData, standardCode: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        {['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified'].map(s => <option key={s}>{s}</option>)}
-                      </select>
+                      <AutocompleteSelect
+                        options={['ASME', 'IS', 'BS', 'EN', 'API', 'IBR', 'Custom', 'Not specified']}
+                        value={formData.standardCode}
+                        onChange={v => setFormData({...formData, standardCode: v})}
+                        placeholder="Select standard..."
+                        allowClear={false}
+                      />
                     </div>
                     <div className="flex items-center mt-6">
                       <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
@@ -539,19 +561,24 @@ const Enquiries = () => {
                       </div>
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-slate-700 mb-1">Unit</label>
-                        <select value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                          {['NOS', 'SET', 'MT', 'KG', 'M', 'M2', 'Job'].map(u => <option key={u}>{u}</option>)}
-                        </select>
+                        <AutocompleteSelect
+                          options={['NOS', 'SET', 'MT', 'KG', 'M', 'M2', 'Job']}
+                          value={formData.unit}
+                          onChange={v => setFormData({...formData, unit: v})}
+                          placeholder="Select unit..."
+                          allowClear={false}
+                        />
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-                      <select value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        <option>Low</option>
-                        <option>Medium</option>
-                        <option>High</option>
-                        <option>Urgent</option>
-                      </select>
+                      <AutocompleteSelect
+                        options={['Low', 'Medium', 'High', 'Urgent']}
+                        value={formData.priority}
+                        onChange={v => setFormData({...formData, priority: v})}
+                        placeholder="Select priority..."
+                        allowClear={false}
+                      />
                     </div>
 
                     {/* Delivery & Budget */}

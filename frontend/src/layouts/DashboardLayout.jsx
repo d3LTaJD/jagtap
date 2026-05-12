@@ -7,7 +7,11 @@ const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden text-slate-900">
+    <div className="flex h-screen bg-[#ebf0f7] overflow-hidden text-slate-900 relative z-0">
+      {/* Background Mesh Gradients to match the airy AI theme */}
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-indigo-100/60 via-purple-100/30 to-transparent pointer-events-none -z-10" />
+      <div className="absolute -top-40 right-0 w-[1000px] h-[700px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-200/50 via-blue-50/20 to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
+      <div className="absolute top-20 left-1/4 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-violet-200/40 via-transparent to-transparent pointer-events-none -z-10 blur-3xl rounded-full" />
       {/* Off-canvas Sidebar Overlay */}
       {isSidebarOpen && (
         <div 

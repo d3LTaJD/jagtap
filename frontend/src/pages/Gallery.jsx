@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { File, FileText, Image as ImageIcon, Download, Search, Filter, Loader2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
 
 const Gallery = () => {
   const [files, setFiles] = useState([]);
@@ -94,17 +95,13 @@ const Gallery = () => {
           />
         </div>
         <div className="relative w-full sm:w-64">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <select
-            className="w-full pl-10 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all appearance-none cursor-pointer"
+          <AutocompleteSelect
+            options={modules}
             value={moduleFilter}
-            onChange={(e) => setModuleFilter(e.target.value)}
-          >
-            <option value="">All Contexts</option>
-            {modules.map(mod => (
-              <option key={mod} value={mod}>{mod}</option>
-            ))}
-          </select>
+            onChange={v => setModuleFilter(v)}
+            placeholder="All Contexts"
+            allowClear={true}
+          />
         </div>
       </div>
 

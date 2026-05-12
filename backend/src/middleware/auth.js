@@ -7,19 +7,17 @@ exports.protect = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
-  
+
   if (!token) {
     return res.status(401).json({ status: 'error', message: 'Not authorized to access this route' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id); 
-    
+    req.user = await User.findById(decoded.userId || decoded.id);
     if (!req.user) {
-      return res.status(401).json({ message: 'The user belonging to this token no longer exists. Please log in again.' });
+      return res.status(401).json({ status: 'error', message: 'User belonging to token no longer exists' });
     }
-    
     next();
   } catch (error) {
     return res.status(401).json({ status: 'error', message: 'Token is invalid or expired' });
@@ -36,39 +34,39 @@ exports.authorize = (...roles) => {
   };
 };
 
- // Dynamic permission check
- exports.requirePermission = (moduleName, action) => {
-   return async (req, res, next) => {
-     // SUPER_ADMIN (SA code) implicitly has all permissions
-     if (req.user.role === 'SA' || req.user.role === 'SUPER_ADMIN') {
-       return next(); 
-     }
+// Dynamic permission check
+exports.requirePermission = (moduleName, action) => {
+  return async (req, res, next) => {
+    // SUPER_ADMIN (SA code) implicitly has all permissions
+    if (req.user.role === 'SA' || req.user.role === 'SUPER_ADMIN') {
+      return next();
+    }
 
-     try {
-       const roleDoc = await Role.findOne({ code: req.user.role });
-       
-       // Check primary role
-       let hasPermission = false;
-       if (roleDoc?.permissions) {
-         const perms = roleDoc.permissions.get(moduleName);
-         if (perms && perms[action] === true) hasPermission = true;
-       }
+    try {
+      const roleDoc = await Role.findOne({ code: req.user.role });
 
-       // Check secondary role (additive)
-       if (!hasPermission && req.user.secondaryRole) {
-         const secRole = await Role.findOne({ code: req.user.secondaryRole });
-         if (secRole?.permissions) {
-           const secPerms = secRole.permissions.get(moduleName);
-           if (secPerms && secPerms[action] === true) hasPermission = true;
-         }
-       }
+      // Check primary role
+      let hasPermission = false;
+      if (roleDoc?.permissions) {
+        const perms = roleDoc.permissions.get(moduleName);
+        if (perms && perms[action] === true) hasPermission = true;
+      }
 
-       if (hasPermission) return next();
+      // Check secondary role (additive)
+      if (!hasPermission && req.user.secondaryRole) {
+        const secRole = await Role.findOne({ code: req.user.secondaryRole });
+        if (secRole?.permissions) {
+          const secPerms = secRole.permissions.get(moduleName);
+          if (secPerms && secPerms[action] === true) hasPermission = true;
+        }
+      }
 
-       return res.status(403).json({ status: 'error', message: `Not authorized to perform ${action} on ${moduleName}` });
-     } catch (err) {
-       console.error('Permission check error:', err);
-       return res.status(500).json({ status: 'error', message: 'Server error during permission check' });
-     }
-   };
- };
+      if (hasPermission) return next();
+
+      return res.status(403).json({ status: 'error', message: `Not authorized to perform ${action} on ${moduleName}` });
+    } catch (err) {
+      console.error('Permission check error:', err);
+      return res.status(500).json({ status: 'error', message: 'Server error during permission check' });
+    }
+  };
+};

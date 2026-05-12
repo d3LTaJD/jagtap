@@ -299,7 +299,7 @@ const ProfileSettings = () => {
               { label: 'Role', value: roleBadge.label },
               { label: 'Status', value: user?.isActive ? 'Active' : 'Inactive' },
               { label: 'Verified', value: user?.isVerified ? 'Yes' : 'No' },
-              { label: 'User ID', value: user?._id ? `...${user._id.slice(-6)}` : 'N/A' },
+              { label: 'User ID', value: user?._id ? String(parseInt(user._id.slice(-4), 16)).padStart(4, '0') : 'N/A' },
             ].map(({ label, value }) => (
               <div key={label} className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>

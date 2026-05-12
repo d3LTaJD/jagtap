@@ -30,6 +30,7 @@ const Login = () => {
     }
   };
 
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative overflow-hidden">
       <div className="absolute top-0 right-0 -m-32 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FileCheck, Filter, Plus, ChevronRight, CheckCircle2, Loader2, X, Trash2, PlusCircle, Download, RefreshCw } from 'lucide-react';
 import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import AutocompleteSelect from '../components/AutocompleteSelect';
+import { Can } from '../context/AbilityContext';
 
 const QuoteStatusBadge = ({ status }) => {
   const colors = {
@@ -122,6 +124,18 @@ const Quotations = () => {
     }
   };
 
+  const handleDelete = async (e, id, qtId) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete quotation ${qtId}? This action cannot be undone.`)) return;
+    try {
+      await api.delete(`/quotations/${id}`);
+      fetchQuotations();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting quotation');
+    }
+  };
+
   const handleDownloadPdf = async (e, id, qtId) => {
     e.stopPropagation();
     try {
@@ -167,14 +181,12 @@ const Quotations = () => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium shadow-sm transition-all">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </button>
-          <button onClick={() => setShowNewModal(true)} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Quote
-          </button>
+          <Can I="create" a="Quotation">
+            <button onClick={() => setShowNewModal(true)} className="inline-flex items-center justify-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-sm shadow-brand-500/30 transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Quote
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -246,11 +258,18 @@ const Quotations = () => {
                         {new Date(qt.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                        {qt.status === 'DRAFT' && <button onClick={(e) => handleUpdateStatus(e, qt._id, 'TECH_REVIEW')} className="text-brand-600 font-bold hover:underline">Submit Review</button>}
-                        {(qt.status === 'TECH_REVIEW' || qt.status === 'PENDING_APPROVAL') && <button onClick={(e) => handleUpdateStatus(e, qt._id, 'APPROVED')} className="text-emerald-600 font-bold hover:underline">Approve</button>}
+                        <Can I="edit" a="Quotation">
+                          {qt.status === 'DRAFT' && <button onClick={(e) => handleUpdateStatus(e, qt._id, 'TECH_REVIEW')} className="text-brand-600 font-bold hover:underline">Submit Review</button>}
+                          {(qt.status === 'TECH_REVIEW' || qt.status === 'PENDING_APPROVAL') && <button onClick={(e) => handleUpdateStatus(e, qt._id, 'APPROVED')} className="text-emerald-600 font-bold hover:underline">Approve</button>}
+                        </Can>
                         <button onClick={(e) => handleDownloadPdf(e, qt._id, qt.quotationId || 'QT')} className="text-slate-400 hover:text-blue-600 p-1 rounded transition-colors inline-block" title="Download PDF">
                           <Download className="w-5 h-5 transition-all" />
                         </button>
+                        <Can I="delete" a="Quotation">
+                          <button onClick={(e) => handleDelete(e, qt._id, qt.quotationId || 'QT')} className="text-slate-400 hover:text-red-600 p-1 rounded transition-colors inline-block" title="Delete">
+                            <Trash2 className="w-5 h-5 transition-all" />
+                          </button>
+                        </Can>
                         <button className="text-slate-400 hover:text-brand-600 p-1 rounded transition-colors inline-block" title="View Details">
                           <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" />
                         </button>
@@ -282,12 +301,17 @@ const Quotations = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Select Source Enquiry</label>
-                      <select required value={formData.enquiry} onChange={handleEnquirySelect} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        <option value="" disabled>-- Select an active Enquiry --</option>
-                        {enquiriesForSelect.map(eq => (
-                          <option key={eq._id} value={eq._id}>{eq.enquiryId} - {eq.customer?.companyName} ({eq.coreFields?.productCategory || 'N/A'})</option>
-                        ))}
-                      </select>
+                      <AutocompleteSelect
+                        options={enquiriesForSelect.map(eq => ({
+                          value: eq._id,
+                          label: `${eq.enquiryId} - ${eq.customer?.companyName} (${eq.coreFields?.productCategory || 'N/A'})`
+                        }))}
+                        value={formData.enquiry}
+                        onChange={v => handleEnquirySelect({ target: { value: v } })}
+                        placeholder="-- Select an active Enquiry --"
+                        required={true}
+                        allowClear={false}
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Scope of Supply Description</label>

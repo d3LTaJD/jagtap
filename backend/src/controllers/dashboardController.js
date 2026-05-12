@@ -2,6 +2,7 @@ const Enquiry = require('../models/Enquiry');
 const Quotation = require('../models/Quotation');
 const Qap = require('../models/Qap');
 const FollowUp = require('../models/FollowUp');
+const Customer = require('../models/Customer');
 
 // All statuses that mean the enquiry is still alive / active
 const ACTIVE_STATUSES = ['New', 'Contacted', 'Technical Review', 'Quoted', 'Negotiating', 'On Hold'];
@@ -13,6 +14,7 @@ exports.getDashboardStats = async (req, res, next) => {
     const activeEnquiries = await Enquiry.countDocuments({ status: { $in: ACTIVE_STATUSES } });
     const wonEnquiries    = await Enquiry.countDocuments({ status: 'Won' });
     const lostEnquiries   = await Enquiry.countDocuments({ status: 'Lost' });
+    const activeClients   = await Customer.countDocuments({ isActive: true });
 
     // Pipeline breakdown by status (for funnel chart)
     const statusGroups = await Enquiry.aggregate([
@@ -105,6 +107,7 @@ exports.getDashboardStats = async (req, res, next) => {
         stats: {
           totalEnquiries,
           activeEnquiries,
+          activeClients,
           wonQuotations,
           pendingQuotations,
           pendingQaps,

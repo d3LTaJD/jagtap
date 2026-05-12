@@ -1,52 +1,47 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, CheckSquare, Settings, X, Database, Wrench, Shield, CalendarDays, Image } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, CheckSquare, Settings, X, Database, Wrench, Shield, CalendarDays, Image, ClipboardList, Sparkles } from 'lucide-react';
+import { useAbility } from '../context/AbilityContext';
 
 const Sidebar = ({ onClose }) => {
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  const hasAccess = (moduleName) => {
-    if (!user) return false;
-    const role = user.role?.toUpperCase() || '';
-    if (['SA', 'SUPER_ADMIN', 'DIR', 'DIRECTOR'].includes(role)) return true;
-
-    // Fallback for Phase 1 Demo roles
-    if (moduleName === 'Enquiry') return true; // Everyone can see enquiries for now
-    if (moduleName === 'Quotation') return ['SALES', 'MANAGER', 'DESIGN ENGINEER', 'DESIGN'].includes(role) || role.includes('DESIGN');
-    if (moduleName === 'QAP') return ['QUALITY', 'MANAGER', 'PRODUCTION'].includes(role) || role.includes('QUALITY');
-    if (moduleName === 'Admin') return ['ADMIN', 'MANAGER'].includes(role);
-
-    return user?.permissions?.[moduleName]?.view === true;
-  };
+  const ability = useAbility();
 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/app', show: true },
-    { label: 'Tasks', icon: CalendarDays, path: '/app/tasks', show: true },
+    { label: 'Calendar', icon: CalendarDays, path: '/app/tasks', show: true },
+    { label: 'To-Dos', icon: CheckSquare, path: '/app/todos', show: true },
     { label: 'Customers', icon: Database, path: '/app/customers', show: true },
+    { label: 'Vendors', icon: Database, path: '/app/vendors', show: true },
+    { label: 'Products', icon: Database, path: '/app/products', show: true },
     { label: 'Gallery & Files', icon: Image, path: '/app/gallery', show: true },
-    { label: 'Enquiries', icon: Users, path: '/app/enquiries', show: hasAccess('Enquiry') },
-    { label: 'Quotations', icon: FileText, path: '/app/quotations', show: hasAccess('Quotation') },
-    { label: 'Quality Assurance', icon: CheckSquare, path: '/app/qaps', show: hasAccess('QAP') },
+    { label: 'Enquiries', icon: Users, path: '/app/enquiries', show: ability.can('view', 'Enquiry') },
+    { label: 'Quotations', icon: FileText, path: '/app/quotations', show: ability.can('view', 'Quotation') },
+    { label: 'Quality Assurance', icon: CheckSquare, path: '/app/qaps', show: ability.can('view', 'QAP') },
   ];
 
-  if (hasAccess('Admin')) {
+  if (ability.can('view', 'Admin')) {
+    navItems.push({ label: 'Master Data', icon: Database, path: '/app/master-data', show: true });
     navItems.push({ label: 'Field Builder', icon: Wrench, path: '/app/field-builder', show: true });
     navItems.push({ label: 'Role Builder', icon: Shield, path: '/app/role-builder', show: true });
+    navItems.push({ label: 'Audit Logs', icon: ClipboardList, path: '/app/audit-logs', show: true });
     navItems.push({ label: 'User Management', icon: Users, path: '/app/admin', show: true });
+    navItems.push({ label: 'Settings', icon: Settings, path: '/app/settings', show: true });
   }
 
   const visibleNavItems = navItems.filter(item => item.show);
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200">
+    <div className="flex flex-col h-full bg-white text-slate-700">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100">
         <NavLink
           to="/"
-          className="flex items-center gap-2 text-brand-600 font-bold text-lg tracking-tight hover:text-brand-700 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 font-bold text-lg tracking-tight hover:opacity-80 transition-opacity"
           title="Go to Home"
         >
-          <Database className="w-5 h-5 text-brand-500" />
-          <span>Jagtap Engg</span>
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 shadow-sm shadow-brand-500/20">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-slate-900">Jagtap <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-violet-500">AI</span></span>
         </NavLink>
         <button onClick={onClose} className="p-1 -mr-2 text-slate-400 hover:text-slate-600 rounded-md">
           <X className="w-5 h-5" />
@@ -61,23 +56,31 @@ const Sidebar = ({ onClose }) => {
             end={item.path === '/app'}
             onClick={onClose}
             className={({ isActive }) => `
-              flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+              relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 overflow-hidden group
               ${isActive 
-                ? 'bg-brand-50 text-brand-700 shadow-sm' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'text-brand-700 bg-brand-50 shadow-sm font-bold' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }
             `}
           >
-            <item.icon className="w-5 h-5" />
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600 transition-colors'}`} />
+                {item.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
       
       <div className="p-4 border-t border-slate-100">
-        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <p className="text-xs font-semibold text-slate-700">Intan Networks</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">Automated Workflow v1.0</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse-soft"></span>
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Powered by AI</p>
+          </div>
         </div>
       </div>
     </div>

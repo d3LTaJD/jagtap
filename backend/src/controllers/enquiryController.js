@@ -1,7 +1,8 @@
 const Enquiry = require('../models/Enquiry');
 const Customer = require('../models/Customer');
+const Task = require('../models/Task');
 const { createNotification, notifyRoles } = require('../services/notificationService');
-const ActivityLog = require('../models/ActivityLog');
+const { logActivity } = require('../utils/logger');
 
 exports.createEnquiry = async (req, res, next) => {
   try {
@@ -28,13 +29,40 @@ exports.createEnquiry = async (req, res, next) => {
 
     const enquiry = await Enquiry.create(enquiryData);
 
-    if (enquiry.assignedTo && enquiry.assignedTo.toString() !== req.user._id.toString()) {
-      await createNotification({ 
-        user_id: enquiry.assignedTo, 
-        type: 'ENQUIRY_ASSIGNED', 
-        title: 'New Enquiry Assigned', 
-        message: `Enquiry ${enquiry.enquiryId} has been assigned to you.`, 
-        related_id: enquiry._id 
+    await logActivity({
+      req,
+      action: 'CREATE',
+      module: 'ENQUIRY',
+      resourceId: enquiry._id,
+      resourceName: enquiry.enquiryId,
+      newState: enquiry.toObject(),
+      details: `Created new enquiry: ${enquiry.enquiryId}`
+    });
+
+    if (enquiry.assignedTo) {
+      // 1. Notify the user
+      if (enquiry.assignedTo.toString() !== req.user._id.toString()) {
+        await createNotification({ 
+          user_id: enquiry.assignedTo, 
+          type: 'ENQUIRY_ASSIGNED', 
+          title: 'New Enquiry Assigned', 
+          message: `Enquiry ${enquiry.enquiryId} has been assigned to you.`, 
+          related_id: enquiry._id 
+        });
+      }
+
+      // 2. System-generated Task
+      const due = new Date();
+      due.setDate(due.getDate() + 1); // Due tomorrow
+      await Task.create({
+        title: `Follow up on New Enquiry ${enquiry.enquiryId}`,
+        description: `System generated task to review and contact the customer regarding ${enquiry.productCategory}.`,
+        dueDate: due,
+        priority: 'High',
+        status: 'To Do',
+        assignedTo: enquiry.assignedTo,
+        createdBy: req.user._id,
+        linkedEnquiry: enquiry._id
       });
     }
 
@@ -78,24 +106,18 @@ exports.updateEnquiry = async (req, res, next) => {
     const originalEnquiry = await Enquiry.findById(req.params.id);
     const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
-    if (req.body.status && req.body.status !== originalEnquiry.status) {
-      await ActivityLog.create({
-        user_id: req.user._id,
-        action: 'STATUS_CHANGE',
-        module: 'ENQUIRY',
-        details: `Enquiry ${enquiry.enquiryId} status changed from ${originalEnquiry.status} to ${req.body.status}`,
-        related_id: enquiry._id
-      });
-    }
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'ENQUIRY',
+      resourceId: enquiry._id,
+      resourceName: enquiry.enquiryId,
+      previousState: originalEnquiry.toObject(),
+      newState: enquiry.toObject(),
+      details: `Updated enquiry: ${enquiry.enquiryId}`
+    });
 
     if (req.body.assignedTo && req.body.assignedTo.toString() !== originalEnquiry.assignedTo?.toString()) {
-      await ActivityLog.create({
-        user_id: req.user._id,
-        action: 'ASSIGNMENT',
-        module: 'ENQUIRY',
-        details: `Enquiry ${enquiry.enquiryId} assigned to ${req.body.assignedTo}`,
-        related_id: enquiry._id
-      });
       await createNotification({ 
         user_id: req.body.assignedTo, 
         type: 'ENQUIRY_ASSIGNED', 
@@ -119,6 +141,33 @@ exports.updateEnquiry = async (req, res, next) => {
     }
 
     res.status(200).json({ status: 'success', data: { enquiry } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DELETE /api/enquiries/:id
+exports.deleteEnquiry = async (req, res, next) => {
+  try {
+    const enquiry = await Enquiry.findById(req.params.id);
+    if (!enquiry) {
+      return res.status(404).json({ status: 'fail', message: 'Enquiry not found' });
+    }
+
+    await Enquiry.findByIdAndDelete(req.params.id);
+
+    await logActivity({
+      req,
+      action: 'DELETE',
+      module: 'ENQUIRY',
+      resourceId: enquiry._id,
+      resourceName: enquiry.enquiryId,
+      previousState: enquiry.toObject(),
+      newState: null,
+      details: `Permanently deleted enquiry: ${enquiry.enquiryId}`
+    });
+
+    res.status(200).json({ status: 'success', message: 'Enquiry deleted' });
   } catch (err) {
     next(err);
   }

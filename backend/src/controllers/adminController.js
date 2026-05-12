@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Token = require('../models/Token');
 const otpUtils = require('../utils/otp');
 const ActivityLog = require('../models/ActivityLog');
+const { logActivity } = require('../utils/logger');
 
 // @desc    Create new user (Admin only)
 // @route   POST /api/admin/users
@@ -32,8 +33,17 @@ exports.createUser = async (req, res, next) => {
       expires_at: expiresAt
     });
 
-    // Mock sending OTP / Env
-    console.log(`[AUTH MOCK] Generated ${sendInviteLink ? 'INVITE' : 'OTP'} for ${mobile_number}: ${rawToken}`);
+    const { sendEmail } = require('../services/notificationService');
+    const subject = sendInviteLink ? 'Account Invite - Workflow Automation' : 'Account Setup OTP - Workflow Automation';
+    const text = sendInviteLink 
+      ? `Hello ${name},\n\nYou have been invited to join the workflow automation system.\nYour invite token is: ${rawToken}\n\nPlease visit the verify page to set your password.`
+      : `Hello ${name},\n\nYour account has been created. Your setup OTP is: ${rawToken}\nIt is valid for 10 minutes.`;
+
+    await sendEmail({
+      userId: user._id,
+      subject,
+      text
+    });
 
     res.status(201).json({ 
       status: 'success', 
@@ -63,15 +73,19 @@ exports.toggleUserStatus = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
 
+    const originalUser = { ...user.toObject() };
     user.is_active = !user.is_active;
     await user.save({ validateBeforeSave: false });
 
-    await ActivityLog.create({
-      user_id: req.user._id,
-      action: 'TOGGLE_USER_STATUS',
+    await logActivity({
+      req,
+      action: 'UPDATE',
       module: 'USER',
-      details: `Changed status of user ${user.name} to ${user.is_active ? 'Active' : 'Inactive'}`,
-      related_id: user._id
+      resourceId: user._id,
+      resourceName: user.name,
+      previousState: originalUser,
+      newState: user.toObject(),
+      details: `Changed status of user ${user.name} to ${user.is_active ? 'Active' : 'Inactive'}`
     });
 
     res.status(200).json({ status: 'success', data: { user } });
@@ -80,11 +94,140 @@ exports.toggleUserStatus = async (req, res, next) => {
   }
 };
 
+// @desc    Edit existing user
+// @route   PUT /api/admin/users/:id
+exports.editUser = async (req, res, next) => {
+  try {
+    const { name, email, department, role, secondaryRole } = req.body;
+    
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+    const originalUser = { ...user.toObject() };
+
+    if (name) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (department !== undefined) user.department = department;
+    if (role) user.role = role;
+    if (secondaryRole !== undefined) user.secondaryRole = secondaryRole;
+
+    await user.save({ validateBeforeSave: false });
+
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'USER',
+      resourceId: user._id,
+      resourceName: user.name,
+      previousState: originalUser,
+      newState: user.toObject(),
+      details: `Admin updated details for user ${user.name}`
+    });
+
+    res.status(200).json({ status: 'success', data: { user: { id: user._id, name: user.name, role: user.role, secondaryRole: user.secondaryRole, department: user.department } } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Delete user
+// @route   DELETE /api/admin/users/:id
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ status: 'error', message: 'You cannot delete yourself' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    await logActivity({
+      req,
+      action: 'DELETE',
+      module: 'USER',
+      resourceId: user._id,
+      resourceName: user.name,
+      previousState: user.toObject(),
+      newState: null,
+      details: `Admin completely deleted user: ${user.name}`
+    });
+
+    res.status(204).json({ status: 'success', data: null });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Force generate a password reset link/OTP for a user
+// @route   POST /api/admin/users/:id/reset-password
+exports.resetUserPassword = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+    const rawToken = otpUtils.generateInviteToken();
+    const hashedToken = await otpUtils.hashToken(rawToken);
+    
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 60); // 1 hour validity
+
+    await Token.create({
+      user_id: user._id,
+      token: hashedToken,
+      type: 'INVITE',
+      expires_at: expiresAt
+    });
+
+    console.log(`[ADMIN ACTION MOCK] Generated Admin Password Reset link for ${user.mobile_number}: ${rawToken}`);
+
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'USER',
+      resourceId: user._id,
+      resourceName: user.name,
+      details: `Admin generated a password reset link for user ${user.name}`
+    });
+
+    res.status(200).json({ 
+      status: 'success', 
+      message: 'Password reset link generated successfully',
+      data: { token: rawToken } // returning token for UI dev display
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getUserActivityLogs = async (req, res, next) => {
   try {
     const logs = await ActivityLog.find({ user_id: req.params.id })
+      .populate('user_id', 'name role')
       .sort('-timestamp')
       .limit(50);
+    res.status(200).json({ status: 'success', data: { logs } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAllActivityLogs = async (req, res, next) => {
+  try {
+    const { module, user, action } = req.query;
+    const filter = {};
+    if (module) filter.module = module;
+    if (user) filter.user_id = user;
+    if (action) filter.action = action;
+
+    const logs = await ActivityLog.find(filter)
+      .populate('user_id', 'name role')
+      .sort('-timestamp')
+      .limit(200);
+      
     res.status(200).json({ status: 'success', data: { logs } });
   } catch (err) {
     next(err);

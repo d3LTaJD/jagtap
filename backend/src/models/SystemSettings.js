@@ -33,6 +33,15 @@ const systemSettingsSchema = new mongoose.Schema({
   ifscCode:          { type: String, default: '' },
   upiId:             { type: String, default: '' },
 
+  // ─── Notification Rules ─────────────────────────────────────────
+  notificationRules: {
+    enquiryCreated: { email: { type: Boolean, default: true }, whatsapp: { type: Boolean, default: false } },
+    quotationApproved: { email: { type: Boolean, default: true }, whatsapp: { type: Boolean, default: true } },
+    followupDue: { email: { type: Boolean, default: true }, whatsapp: { type: Boolean, default: false } },
+    taskAssigned: { email: { type: Boolean, default: true }, whatsapp: { type: Boolean, default: false } },
+    lowInventory: { email: { type: Boolean, default: true }, whatsapp: { type: Boolean, default: false } }
+  }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('SystemSettings', systemSettingsSchema);

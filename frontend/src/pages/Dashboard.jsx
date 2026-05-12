@@ -1,35 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { Users, FileText, CheckSquare, TrendingUp, IndianRupee, Loader2, Activity, ClipboardList, AlertCircle, RefreshCw, Download, BarChart3, Trophy, TrendingDown } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { Users, FileText, CheckSquare, TrendingUp, IndianRupee, Loader2, Activity, ClipboardList, AlertCircle, RefreshCw, Download, BarChart3, Trophy, TrendingDown, Sparkles, MoreVertical } from 'lucide-react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, CartesianGrid } from 'recharts';
 import api from '../api/client';
 
 const StatCard = ({ title, value, icon: Icon, trend, colorClass = "brand", loading = false }) => {
   const styles = {
-    brand: 'text-brand-600 bg-brand-50 border-brand-100',
-    blue: 'text-blue-600 bg-blue-50 border-blue-100',
-    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    purple: 'text-purple-600 bg-purple-50 border-purple-100',
+    brand: 'from-indigo-500 to-indigo-600',
+    teal: 'from-teal-400 to-teal-500',
+    purple: 'from-purple-400 to-purple-500',
+    orange: 'from-orange-400 to-orange-500',
+  };
+
+  const iconBgStyles = {
+    brand: 'bg-indigo-50 text-indigo-500',
+    teal: 'bg-teal-50 text-teal-500',
+    purple: 'bg-purple-50 text-purple-500',
+    orange: 'bg-orange-50 text-orange-500',
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-default">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</h3>
-        <div className={`p-2 rounded-lg border ${styles[colorClass]} shadow-sm`}>
-          <Icon className="w-4 h-4" />
+    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+      {/* Thick left border */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${styles[colorClass]}`} />
+      
+      <div className="flex items-start justify-between mb-2 relative z-10 pl-2">
+        <div>
+          <h3 className="text-[13px] font-medium text-slate-500 mb-2">{title}</h3>
+          {loading ? (
+            <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" />
+          ) : (
+            <p className="text-3xl font-bold text-slate-800 tracking-tight">{value}</p>
+          )}
+        </div>
+        <div className={`p-2.5 rounded-2xl ${iconBgStyles[colorClass]}`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
-      <div>
-        {loading ? (
-          <div className="h-8 w-24 bg-slate-100 animate-pulse rounded" />
-        ) : (
-          <p className="text-3xl font-black text-slate-900 tracking-tight">{value}</p>
-        )}
+      
+      <div className="pl-2 mt-4">
         {trend && !loading && (
-          <div className="flex items-center gap-1.5 mt-2 text-xs">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="font-bold text-emerald-600">{trend}%</span>
-            <span className="text-slate-500 font-medium tracking-tight">vs last month</span>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="font-bold text-emerald-500">+{trend}%</span>
+            <span className="text-slate-400 font-medium">vs last month</span>
           </div>
         )}
       </div>
@@ -54,6 +66,19 @@ const Dashboard = () => {
   const [pipeline, setPipeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  // Mock data for the Area Chart since backend doesn't provide time-series yet
+  const mockTimeSeriesData = [
+    { name: '1 May', leads: 50 },
+    { name: '7 May', leads: 140 },
+    { name: '10 May', leads: 180 },
+    { name: '13 May', leads: 250 },
+    { name: '16 May', leads: 310 },
+    { name: '19 May', leads: 280 },
+    { name: '23 May', leads: 440 },
+    { name: '25 May', leads: 300 },
+    { name: '28 May', leads: 220 },
+    { name: '31 May', leads: 180 },
+  ];
   const canSeeFinancials = ['SA', 'SUPER_ADMIN', 'DIR', 'DIRECTOR', 'ACC', 'ACCOUNTS'].includes(currentUser.role);
 
   useEffect(() => {
@@ -62,10 +87,11 @@ const Dashboard = () => {
         const res = await api.get('/dashboard/stats');
         const s = res.data.data.stats;
         setStats({
-          activeEnquiries: s.activeEnquiries || 0,
+          activeEnquiries: s.activeEnquiries ?? 0,
+          activeClients: s.activeClients ?? 0,
           quotationsSent: (s.pendingQuotations || 0) + (s.wonQuotations || 0),
-          pipelineValue: s.pipelineValue || 0,
-          pendingQaps: s.pendingQaps || 0,
+          pipelineValue: s.pipelineValue ?? 0,
+          pendingQaps: s.pendingQaps ?? 0,
           wonCount: s.wonCount || 0,
           lostCount: s.lostCount || 0,
           wonValue: s.wonValue || 0,
@@ -128,8 +154,15 @@ const Dashboard = () => {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h1>
-          <p className="text-sm text-slate-500 mt-1">Here is what's happening at Jagtap Engineering today.</p>
+          <h1 className="text-3xl font-medium text-slate-800 tracking-tight">
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, <span className="font-bold text-brand-700">{currentUser.fullName?.split(' ')[0] || 'User'}!</span> <span className="text-2xl">👋</span>
+          </h1>
+          <div className="flex items-center gap-1.5 mt-2">
+            <Sparkles className="w-4 h-4 text-brand-500" />
+            <p className="text-[13px] text-slate-500 font-medium">
+              <span className="font-bold text-slate-700">AI Insight:</span> You have <span className="text-brand-600 font-bold">{stats.activeEnquiries}</span> hot leads ready for follow-up today
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -146,41 +179,48 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatCard loading={loading} title="Active Enquiries" value={stats.activeEnquiries} icon={Users} trend="12" colorClass="brand" />
-        <StatCard loading={loading} title="Quotations Sent" value={stats.quotationsSent} icon={FileText} trend="8" colorClass="blue" />
-        <StatCard loading={loading} title="QAPs Pending" value={stats.pendingQaps} icon={CheckSquare} colorClass="emerald" />
-        <StatCard loading={loading} title="Pipeline Value" value={formatCurrency(stats.pipelineValue)} icon={IndianRupee} trend="24" colorClass="purple" />
+        <StatCard loading={loading} title="Total Leads" value={stats.activeEnquiries ?? 0} icon={Users} trend="12.5" colorClass="brand" />
+        <StatCard loading={loading} title="Active Clients" value={stats.activeClients ?? 0} icon={Users} trend="8.2" colorClass="teal" />
+        <StatCard loading={loading} title="Deals in Pipeline" value={stats.pendingQaps ?? 0} icon={Activity} trend="15.3" colorClass="purple" />
+        <StatCard loading={loading} title="Total Revenue" value={formatCurrency(stats.pipelineValue ?? 0)} icon={IndianRupee} trend="18.7" colorClass="orange" />
       </div>
 
       {/* ── KPI Visualizations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pipeline Funnel */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-wider">
-            <BarChart3 className="w-4 h-4 text-brand-600" /> Pipeline Stage Breakdown
-          </h2>
+        
+        {/* Lead Pipeline Funnel */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-brand-500" /> Lead Pipeline
+            </h2>
+
+          </div>
+          
           {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
+            <div className="flex justify-center items-center flex-1 py-10"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
           ) : (
-            <div className="h-72 w-full">
+            <div className="flex-1 w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pipeline} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                <BarChart data={pipeline} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
                   <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="label" width={100} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                  <YAxis 
+                    type="category" 
+                    dataKey="label" 
+                    width={110} 
+                    tick={{ fontSize: 12, fontWeight: 600, fill: '#475569' }} 
+                    axisLine={false} 
+                    tickLine={false} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f1f5f9', radius: 6 }} 
+                    contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '13px' }}
+                    formatter={(value) => [value, 'Count']}
+                  />
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={28} label={{ position: 'right', fontSize: 13, fontWeight: 700, fill: '#334155' }}>
                     {pipeline.map((entry, index) => {
-                      const getFill = (c) => {
-                        if (c.includes('emerald')) return '#10b981';
-                        if (c.includes('blue')) return '#3b82f6';
-                        if (c.includes('amber')) return '#f59e0b';
-                        if (c.includes('orange')) return '#f97316';
-                        if (c.includes('red')) return '#f87171';
-                        if (c.includes('violet')) return '#8b5cf6';
-                        if (c.includes('cyan')) return '#06b6d4';
-                        return '#64748b';
-                      };
-                      return <Cell key={`cell-${index}`} fill={getFill(entry.color || '')} />;
+                      const barColors = ['#6366f1', '#3b82f6', '#06b6d4', '#14b8a6', '#10b981', '#f59e0b', '#f97316', '#ef4444'];
+                      return <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />;
                     })}
                   </Bar>
                 </BarChart>
@@ -189,38 +229,38 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Product Categories Doughnut */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-wider">
-            <Activity className="w-4 h-4 text-brand-600" /> Product Categories
-          </h2>
-          {loading ? (
-             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>
-          ) : stats.byCategory && stats.byCategory.length === 0 ? (
-             <div className="flex justify-center items-center h-72 text-sm text-slate-400 font-medium">No category data yet</div>
-          ) : (
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.byCategory}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={70}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {stats.byCategory?.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'][index % 7]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 500 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        {/* Leads Over Time Chart */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-brand-500" /> Leads Over Time
+            </h2>
+            <select className="text-xs border-slate-200 rounded-lg text-slate-600 focus:ring-brand-500 focus:border-brand-500 py-1.5 pl-3 pr-8">
+              <option>This Month</option>
+              <option>Last Month</option>
+              <option>This Year</option>
+            </select>
+          </div>
+          
+          <div style={{ width: '100%', height: 280 }}>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={mockTimeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dx={-10} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} 
+                  itemStyle={{ color: '#8b5cf6', fontWeight: 'bold' }}
+                />
+                <Area type="monotone" dataKey="leads" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 

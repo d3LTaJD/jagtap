@@ -2,7 +2,7 @@ const Quotation = require('../models/Quotation');
 const Enquiry = require('../models/Enquiry');
 const puppeteer = require('puppeteer');
 const { createNotification, notifyRoles, sendEmail } = require('../services/notificationService');
-const ActivityLog = require('../models/ActivityLog');
+const { logActivity } = require('../utils/logger');
 
 exports.createQuotation = async (req, res, next) => {
   try {
@@ -13,6 +13,16 @@ exports.createQuotation = async (req, res, next) => {
     req.body.quotationId = `QT-${year}-${month}-${Math.floor(Math.random() * 10000)}`;
 
     const quotation = await Quotation.create(req.body);
+    
+    await logActivity({
+      req,
+      action: 'CREATE',
+      module: 'QUOTATION',
+      resourceId: quotation._id,
+      resourceName: quotation.quotationId,
+      newState: quotation.toObject(),
+      details: `Created new quotation: ${quotation.quotationId}`
+    });
     
     if (req.body.enquiry) {
       await Enquiry.findByIdAndUpdate(req.body.enquiry, { status: 'Quoted' });
@@ -80,14 +90,18 @@ exports.updateQuotationStatus = async (req, res, next) => {
     const originalQuotation = await Quotation.findById(req.params.id);
     const quotation = await Quotation.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'QUOTATION',
+      resourceId: quotation._id,
+      resourceName: quotation.quotationId,
+      previousState: originalQuotation.toObject(),
+      newState: quotation.toObject(),
+      details: `Updated quotation status/fields: ${quotation.quotationId}`
+    });
+
     if (status && status !== originalQuotation.status) {
-      await ActivityLog.create({
-        user_id: req.user._id,
-        action: 'STATUS_CHANGE',
-        module: 'QUOTATION',
-        details: `Quotation ${quotation.quotationId} status changed from ${originalQuotation.status} to ${status}`,
-        related_id: quotation._id
-      });
       if (status === 'TECH_REVIEW') {
         await notifyRoles({ roles: ['DESIGN'], type: 'QUOTE_APPROVAL', title: 'Quotation Tech Review', message: `Quotation ${quotation.quotationId} needs technical review.`, related_id: quotation._id });
       } else if (status === 'PENDING_APPROVAL') {
@@ -105,13 +119,6 @@ exports.updateQuotationStatus = async (req, res, next) => {
     }
 
     if (assignedTo && assignedTo.toString() !== originalQuotation.assignedTo?.toString()) {
-       await ActivityLog.create({
-         user_id: req.user._id,
-         action: 'ASSIGNMENT',
-         module: 'QUOTATION',
-         details: `Quotation ${quotation.quotationId} assigned to ${assignedTo}`,
-         related_id: quotation._id
-       });
        await createNotification({ user_id: assignedTo, type: 'QUOTE_APPROVAL', title: 'Quotation Assigned', message: `Quotation ${quotation.quotationId} was assigned to you.`, related_id: quotation._id });
     }
 
@@ -246,6 +253,32 @@ exports.generatePdf = async (req, res, next) => {
       .populate('files');
 
     res.status(201).json({ status: 'success', data: { quotation: populatedQuotation, newFile: fileMeta } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteQuotation = async (req, res, next) => {
+  try {
+    const quotation = await Quotation.findById(req.params.id);
+    if (!quotation) {
+      return res.status(404).json({ status: 'fail', message: 'Quotation not found' });
+    }
+
+    await Quotation.findByIdAndDelete(req.params.id);
+
+    await logActivity({
+      req,
+      action: 'DELETE',
+      module: 'QUOTATION',
+      resourceId: quotation._id,
+      resourceName: quotation.quotationId,
+      previousState: quotation.toObject(),
+      newState: null,
+      details: `Permanently deleted quotation: ${quotation.quotationId}`
+    });
+
+    res.status(200).json({ status: 'success', message: 'Quotation deleted' });
   } catch (err) {
     next(err);
   }

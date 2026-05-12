@@ -1,4 +1,5 @@
 const Customer = require('../models/Customer');
+const { logActivity } = require('../utils/logger');
 
 // Pad number for auto ID: CUS-0001
 const padId = (n) => `CUS-${String(n).padStart(4, '0')}`;
@@ -30,6 +31,17 @@ exports.createCustomer = async (req, res, next) => {
     const count = (await Customer.countDocuments()) + 1;
     const customerId = padId(count);
     const customer = await Customer.create({ ...req.body, customerId });
+    
+    await logActivity({
+      req,
+      action: 'CREATE',
+      module: 'CUSTOMER',
+      resourceId: customer._id,
+      resourceName: customer.companyName,
+      newState: customer.toObject(),
+      details: `Created customer: ${customer.companyName}`
+    });
+
     res.status(201).json({ status: 'success', data: { customer } });
   } catch (err) { next(err); }
 };
@@ -37,10 +49,23 @@ exports.createCustomer = async (req, res, next) => {
 // PATCH /api/customers/:id
 exports.updateCustomer = async (req, res, next) => {
   try {
+    const originalCustomer = await Customer.findById(req.params.id);
     const customer = await Customer.findByIdAndUpdate(
       req.params.id, { $set: req.body }, { new: true, runValidators: true }
     );
     if (!customer) return res.status(404).json({ status: 'fail', message: 'Customer not found' });
+
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'CUSTOMER',
+      resourceId: customer._id,
+      resourceName: customer.companyName,
+      previousState: originalCustomer.toObject(),
+      newState: customer.toObject(),
+      details: `Updated customer: ${customer.companyName}`
+    });
+
     res.status(200).json({ status: 'success', data: { customer } });
   } catch (err) { next(err); }
 };
@@ -48,7 +73,24 @@ exports.updateCustomer = async (req, res, next) => {
 // DELETE /api/customers/:id  (soft delete — set isActive false)
 exports.deleteCustomer = async (req, res, next) => {
   try {
-    await Customer.findByIdAndUpdate(req.params.id, { isActive: false });
-    res.status(200).json({ status: 'success', message: 'Customer deactivated' });
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ status: 'fail', message: 'Customer not found' });
+    }
+
+    await Customer.findByIdAndDelete(req.params.id);
+
+    await logActivity({
+      req,
+      action: 'DELETE',
+      module: 'CUSTOMER',
+      resourceId: customer._id,
+      resourceName: customer.companyName,
+      previousState: customer.toObject(),
+      newState: null,
+      details: `Permanently deleted customer: ${customer.companyName}`
+    });
+
+    res.status(200).json({ status: 'success', message: 'Customer deleted permanently' });
   } catch (err) { next(err); }
 };

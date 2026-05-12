@@ -1,4 +1,5 @@
 const SystemSettings = require('../models/SystemSettings');
+const { logActivity } = require('../utils/logger');
 
 // GET /api/settings — return the singleton settings doc (create if not exists)
 exports.getSettings = async (req, res, next) => {
@@ -19,11 +20,24 @@ exports.updateSettings = async (req, res, next) => {
     const forbidden = ['_singleton', '_id', '__v'];
     forbidden.forEach(k => delete req.body[k]);
 
+    const previousState = await SystemSettings.findOne({ _singleton: 'global' });
     const settings = await SystemSettings.findOneAndUpdate(
       { _singleton: 'global' },
       { $set: req.body },
       { new: true, upsert: true, runValidators: true }
     );
+
+    await logActivity({
+      req,
+      action: 'UPDATE',
+      module: 'SETTINGS',
+      resourceId: settings._id,
+      resourceName: 'Global Settings',
+      previousState: previousState?.toObject(),
+      newState: settings.toObject(),
+      details: 'Updated system-wide configuration settings.'
+    });
+
     res.status(200).json({ status: 'success', data: { settings } });
   } catch (err) {
     next(err);

@@ -18,12 +18,20 @@ import FieldBuilder from './pages/FieldBuilder';
 import RoleBuilder from './pages/RoleBuilder';
 import Customers from './pages/Customers';
 import Tasks from './pages/Tasks';
+import TodoTasks from './pages/TodoTasks';
 import Gallery from './pages/Gallery';
+import SystemSettings from './pages/SystemSettings';
+import MasterData from './pages/MasterData';
+import AuditLog from './pages/AuditLog';
+import Vendors from './pages/Vendors';
+import Products from './pages/Products';
+import { AbilityProvider } from './context/AbilityContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AbilityProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Landing Page Route */}
         <Route path="/" element={<LandingPage />} />
         
@@ -36,6 +44,7 @@ function App() {
         <Route path="/app" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="todos" element={<TodoTasks />} />
           <Route path="enquiries" element={<Enquiries />} />
           <Route path="enquiries/:id" element={<EnquiryDetail />} />
           <Route path="quotations" element={<Quotations />} />
@@ -48,11 +57,17 @@ function App() {
           <Route path="role-builder" element={<RoleBuilder />} />
           <Route path="gallery" element={<Gallery />} />
           <Route path="customers" element={<Customers />} />
+          <Route path="vendors" element={<Vendors />} />
+          <Route path="products" element={<Products />} />
+          <Route path="settings" element={<SystemSettings />} />
+          <Route path="master-data" element={<MasterData />} />
+          <Route path="audit-logs" element={<AuditLog />} />
         </Route>
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
+    </AbilityProvider>
   );
 }
 

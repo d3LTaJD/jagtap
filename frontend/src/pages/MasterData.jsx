@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from 'react';
+import { Database, Plus, X, Pencil, Trash2, Loader2, Save, Link2, Unlink, ChevronRight, GripVertical, CheckCircle2, AlertTriangle } from 'lucide-react';
+import api from '../api/client';
+import AutocompleteSelect from '../components/AutocompleteSelect';
+
+const MODULES = ['Enquiry', 'Quotation', 'QAP', 'Product', 'Customer', 'Task'];
+const MODULE_COLORS = { Enquiry: 'bg-blue-100 text-blue-700', Quotation: 'bg-emerald-100 text-emerald-700', QAP: 'bg-violet-100 text-violet-700', Product: 'bg-orange-100 text-orange-700', Customer: 'bg-pink-100 text-pink-700', Task: 'bg-amber-100 text-amber-700' };
+
+const emptyCategory = { name: '', description: '', assignedTo: [], items: [] };
+
+const MasterData = () => {
+  const [categories, setCategories] = useState([]);
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ ...emptyCategory });
+  const [itemInput, setItemInput] = useState({ label: '', description: '' });
+  const [expanded, setExpanded] = useState(null);
+  const [showLinkModal, setShowLinkModal] = useState(null);
+
+  const flash = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [catRes, fieldRes] = await Promise.all([
+        api.get('/master-data'),
+        api.get('/fields').catch(() => ({ data: { data: { fields: [] } } })),
+      ]);
+      setCategories(catRes.data.data.categories || []);
+      setFields(fieldRes.data.data.fields || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const openCreate = () => { setEditing(null); setForm({ ...emptyCategory }); setShowModal(true); };
+
+  const openEdit = (cat) => {
+    setEditing(cat);
+    setForm({ name: cat.name, description: cat.description || '', assignedTo: [...(cat.assignedTo || [])], items: [...(cat.items || [])] });
+    setShowModal(true);
+  };
+
+  const addItem = () => {
+    if (!itemInput.label.trim()) return;
+    const value = itemInput.label.trim().toLowerCase().replace(/\s+/g, '_');
+    setForm(f => ({ ...f, items: [...f.items, { label: itemInput.label.trim(), value, description: itemInput.description, sortOrder: f.items.length, isActive: true }] }));
+    setItemInput({ label: '', description: '' });
+  };
+
+  const removeItem = (idx) => setForm(f => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
+  const toggleItemActive = (idx) => {
+    setForm(f => ({ ...f, items: f.items.map((item, i) => i === idx ? { ...item, isActive: !item.isActive } : item) }));
+  };
+
+  const toggleModule = (mod) => {
+    setForm(f => ({ ...f, assignedTo: f.assignedTo.includes(mod) ? f.assignedTo.filter(m => m !== mod) : [...f.assignedTo, mod] }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editing) {
+        await api.patch(`/master-data/${editing._id}`, form);
+        flash('Category updated!');
+      } else {
+        await api.post('/master-data', form);
+        flash('Category created!');
+      }
+      setShowModal(false);
+      fetchAll();
+    } catch (err) {
+      flash(err.response?.data?.message || 'Error saving', 'error');
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (cat) => {
+    if (!confirm(`Archive "${cat.name}"? It can be restored later.`)) return;
+    try { await api.delete(`/master-data/${cat._id}`); flash('Category archived'); fetchAll(); }
+    catch { flash('Delete failed', 'error'); }
+  };
+
+  const handleLinkField = async (catId, fieldId) => {
+    try { await api.post(`/master-data/${catId}/link-field`, { fieldId }); flash('Field linked & synced!'); fetchAll(); setShowLinkModal(null); }
+    catch (e) { flash('Link failed', 'error'); }
+  };
+
+  const handleUnlinkField = async (catId, fieldId) => {
+    try { await api.delete(`/master-data/${catId}/link-field/${fieldId}`); flash('Field unlinked'); fetchAll(); }
+    catch { flash('Unlink failed', 'error'); }
+  };
+
+  // Get dropdown-type fields not already linked to this category
+  const getAvailableFields = (cat) => {
+    const linkedIds = (cat.linkedFields || []).map(f => f._id);
+    return fields.filter(f => ['Dropdown (Single)', 'Dropdown (Multi)', 'Radio Button'].includes(f.fieldType) && !linkedIds.includes(f._id));
+  };
+
+  return (
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto animate-in fade-in duration-500">
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-bold animate-in slide-in-from-top-2 ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
+          {toast.type === 'error' ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Database className="w-6 h-6 text-brand-600" /> Master Data
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">Manage lookup tables, dropdown options, and reference data across modules.</p>
+        </div>
+        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm shadow-brand-500/25">
+          <Plus className="w-4 h-4" /> New Category
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>
+      ) : categories.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <Database className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+          <p className="text-lg font-bold text-slate-700">No Master Data Yet</p>
+          <p className="text-sm text-slate-500 mt-1 mb-6">Create categories like "Material Types", "Welding Processes", etc.</p>
+          <button onClick={openCreate} className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold"><Plus className="w-4 h-4" /> Create First Category</button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {categories.map(cat => (
+            <div key={cat._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md">
+              {/* Category Header */}
+              <div className="px-6 py-4 flex items-center gap-4 cursor-pointer" onClick={() => setExpanded(expanded === cat._id ? null : cat._id)}>
+                <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${expanded === cat._id ? 'rotate-90' : ''}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-base font-bold text-slate-900">{cat.name}</h3>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{cat.items?.filter(i => i.isActive).length || 0} items</span>
+                  </div>
+                  {cat.description && <p className="text-xs text-slate-500 mt-0.5 truncate">{cat.description}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(cat.assignedTo || []).map(mod => (
+                    <span key={mod} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${MODULE_COLORS[mod] || 'bg-slate-100 text-slate-600'}`}>{mod}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setShowLinkModal(cat)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Link to Field"><Link2 className="w-4 h-4" /></button>
+                  <button onClick={() => openEdit(cat)} className="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(cat)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+
+              {/* Expanded Items */}
+              {expanded === cat._id && (
+                <div className="border-t border-slate-100 bg-slate-50/50">
+                  {/* Linked Fields */}
+                  {cat.linkedFields?.length > 0 && (
+                    <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Linked Fields:</span>
+                      {cat.linkedFields.map(f => (
+                        <span key={f._id} className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+                          <Link2 className="w-3 h-3" /> {f.fieldLabel} <span className="text-blue-400 font-medium">({f.formContext})</span>
+                          <button onClick={() => handleUnlinkField(cat._id, f._id)} className="text-blue-400 hover:text-red-500 ml-1"><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Items Table */}
+                  <div className="px-6 py-2">
+                    <div className="grid grid-cols-12 gap-2 py-2 border-b border-slate-200">
+                      <div className="col-span-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Label / Value</div>
+                      <div className="col-span-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</div>
+                      <div className="col-span-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</div>
+                    </div>
+                    {(cat.items || []).length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-6">No items yet. Edit this category to add items.</p>
+                    ) : (cat.items || []).map((item, idx) => (
+                      <div key={item._id || idx} className={`grid grid-cols-12 gap-2 py-2.5 border-b border-slate-50 ${!item.isActive ? 'opacity-40' : ''}`}>
+                        <div className="col-span-5">
+                          <p className="text-sm font-bold text-slate-800">{item.label}</p>
+                          <p className="text-[10px] font-mono text-slate-400">{item.value}</p>
+                        </div>
+                        <div className="col-span-5 text-xs text-slate-500 self-center">{item.description || '—'}</div>
+                        <div className="col-span-2 text-right self-center">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>{item.isActive ? 'Active' : 'Inactive'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-lg font-bold text-slate-900">{editing ? `Edit — ${editing.name}` : 'New Master Data Category'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Category Name *</label>
+                  <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Material Types" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none" />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Description</label>
+                  <input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Optional description" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none" />
+                </div>
+              </div>
+
+              {/* Module Assignment */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Assign to Modules</label>
+                <div className="flex flex-wrap gap-2">
+                  {MODULES.map(mod => (
+                    <button key={mod} type="button" onClick={() => toggleModule(mod)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${form.assignedTo.includes(mod) ? 'bg-brand-600 text-white border-brand-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-brand-300'}`}>
+                      {mod}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Items ({form.items.length})</label>
+                <div className="flex gap-2 mb-3">
+                  <input type="text" value={itemInput.label} onChange={e => setItemInput({ ...itemInput, label: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }} placeholder="Item label (e.g. SA-516 Gr. 70)" className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500/20" />
+                  <input type="text" value={itemInput.description} onChange={e => setItemInput({ ...itemInput, description: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }} placeholder="Description (optional)" className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500/20" />
+                  <button type="button" onClick={addItem} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold hover:bg-brand-700">Add</button>
+                </div>
+                {form.items.length > 0 && (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {form.items.map((item, idx) => (
+                      <div key={idx} className={`flex items-center gap-3 px-4 py-2.5 border-b border-slate-50 last:border-0 ${!item.isActive ? 'opacity-40 bg-slate-50' : ''}`}>
+                        <GripVertical className="w-3.5 h-3.5 text-slate-300" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">{item.label}</p>
+                          {item.description && <p className="text-[10px] text-slate-400 truncate">{item.description}</p>}
+                        </div>
+                        <button type="button" onClick={() => toggleItemActive(idx)} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>{item.isActive ? 'Active' : 'Inactive'}</button>
+                        <button type="button" onClick={() => removeItem(idx)} className="p-1 text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-sm">Cancel</button>
+                <button type="submit" disabled={saving} className="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm disabled:opacity-70 flex items-center gap-2">
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />} <Save className="w-4 h-4" /> {editing ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Link Field Modal */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-base font-bold text-slate-900">Link Field to "{showLinkModal.name}"</h2>
+              <button onClick={() => setShowLinkModal(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-3 max-h-80 overflow-y-auto">
+              {getAvailableFields(showLinkModal).length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-6">No dropdown fields available to link. Create dropdown fields in Field Builder first.</p>
+              ) : getAvailableFields(showLinkModal).map(f => (
+                <div key={f._id} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl hover:bg-slate-50">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{f.fieldLabel}</p>
+                    <p className="text-[10px] text-slate-400">{f.formContext} — {f.fieldType}</p>
+                  </div>
+                  <button onClick={() => handleLinkField(showLinkModal._id, f._id)} className="text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg hover:bg-brand-100 flex items-center gap-1">
+                    <Link2 className="w-3 h-3" /> Link
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MasterData;

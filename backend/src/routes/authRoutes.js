@@ -9,6 +9,7 @@ const router = express.Router();
 
 // Public routes
 router.post('/login', login);
+
 router.post('/verify', verifyToken);
 router.post('/set-password', setPassword);
 router.post('/forgot-password', forgotPassword);

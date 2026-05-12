@@ -1,6 +1,6 @@
 const express = require('express');
-const { protect } = require('../middleware/auth');
-const { createEnquiry, getEnquiries, getEnquiry, updateEnquiry } = require('../controllers/enquiryController');
+const { protect, requirePermission } = require('../middleware/auth');
+const { createEnquiry, getEnquiries, getEnquiry, updateEnquiry, deleteEnquiry } = require('../controllers/enquiryController');
 const followUpRouter = require('./followUpRoutes');
 
 const router = express.Router();
@@ -12,11 +12,12 @@ router.use(protect);
 router.use('/:enquiryId/followups', followUpRouter);
 
 router.route('/')
-  .get(getEnquiries)
-  .post(createEnquiry);
+  .get(requirePermission('Enquiry', 'view'), getEnquiries)
+  .post(requirePermission('Enquiry', 'create'), createEnquiry);
 
 router.route('/:id')
-  .get(getEnquiry)
-  .patch(updateEnquiry);
+  .get(requirePermission('Enquiry', 'view'), getEnquiry)
+  .patch(requirePermission('Enquiry', 'edit'), updateEnquiry)
+  .delete(requirePermission('Enquiry', 'delete'), deleteEnquiry);
 
 module.exports = router;
