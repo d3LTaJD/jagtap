@@ -4,7 +4,7 @@ const Role = require('../src/models/Role');
 
 const rolesToSeed = [
   {
-    name: 'Super Admin', code: 'SA', department: 'Admin', description: 'IT Admin / Intan Networks - Full system access',
+    name: 'Super Admin', code: 'SA', department: 'Admin', description: 'System Administrator - Full system access',
     permissions: {
       Enquiry: { view: true, create: true, edit: true, delete: true, assign: true },
       Quotation: { view: true, create: true, edit: true, delete: true, approve: true },
@@ -24,7 +24,7 @@ const rolesToSeed = [
     }
   },
   {
-    name: 'Technical Authority', code: 'TA', department: 'Design', description: 'Yogesh Sir - Technical specifications and field config',
+    name: 'Technical Authority', code: 'TA', department: 'Design', description: 'Technical expert - Technical specifications and field config',
     permissions: {
       Enquiry: { view: true, create: false, edit: true, delete: false, assign: false },
       Quotation: { view: true, create: false, edit: true, delete: false, approve: true },

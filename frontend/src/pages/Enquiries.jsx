@@ -475,7 +475,7 @@ const Enquiries = () => {
                       <div className="md:col-span-2 p-3 bg-brand-50/50 rounded-lg border border-brand-100 flex items-center gap-4">
                         <label className="text-sm font-medium text-brand-800 whitespace-nowrap">Received On:</label>
                         <AutocompleteSelect
-                          options={['info@', 'sales@', 'yogesh@']}
+                          options={['info@', 'sales@', 'support@']}
                           value={formData.emailAccount}
                           onChange={v => setFormData({...formData, emailAccount: v})}
                           placeholder="Select account..."

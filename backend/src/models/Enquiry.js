@@ -4,7 +4,7 @@ const enquirySchema = new mongoose.Schema({
   enquiryId: { type: String, unique: true }, // ENQ-YYYY-MM-NNNN
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
   sourceChannel: { type: String, required: true },
-  emailAccount: { type: String, enum: ['info@', 'sales@', 'yogesh@'] },
+  emailAccount: { type: String, enum: ['info@', 'sales@', 'support@'] },
   indiaMartLeadId: { type: String },
   leadGenuineness: { type: String, enum: ['Genuine', 'Likely Genuine', 'Suspect', 'Junk'] },
   detailsSharedByLead: { type: Boolean, default: false },
