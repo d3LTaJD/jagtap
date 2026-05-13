@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AbilityBuilder, Ability } from '@casl/ability';
 import { createContextualCan } from '@casl/react';
+import api from '../api/client';
 
 export const AbilityContext = createContext();
 export const Can = createContextualCan(AbilityContext.Consumer);
@@ -35,6 +36,29 @@ export const AbilityProvider = ({ children }) => {
       setAbility(defineAbilitiesFor(user));
     }
     
+    const fetchLatestPermissions = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await api.get('/auth/me');
+        if (res.data && res.data.user) {
+          const user = res.data.user;
+          localStorage.setItem('user', JSON.stringify(user));
+          setAbility(defineAbilitiesFor(user));
+        }
+      } catch (err) {
+        console.error("Failed to automatically refresh user permissions", err);
+      }
+    };
+
+    // Refresh immediately on mount to catch any changes made while offline/closed
+    if (localStorage.getItem('token')) {
+      fetchLatestPermissions();
+    }
+
+    // Auto-refresh every 5 minutes (300000 ms)
+    const intervalId = setInterval(fetchLatestPermissions, 300000);
+    
     // Listen for storage changes (for login/logout)
     const handleStorage = () => {
       const userStr = localStorage.getItem('user');
@@ -47,7 +71,10 @@ export const AbilityProvider = ({ children }) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(intervalId);
+    };
   }, []);
 
   return (

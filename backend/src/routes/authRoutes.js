@@ -1,7 +1,7 @@
 const express = require('express');
 const {
   login, verifyToken, setPassword, forgotPassword,
-  getAllUsers, updateProfile, changePassword
+  getAllUsers, updateProfile, changePassword, getMe
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -16,6 +16,7 @@ router.post('/forgot-password', forgotPassword);
 
 // Protected routes
 router.use(protect);
+router.get('/me', getMe);
 router.get('/users', getAllUsers);
 router.patch('/profile', updateProfile);
 router.patch('/change-password', changePassword);

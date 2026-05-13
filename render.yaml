@@ -1,0 +1,49 @@
+services:
+  # Backend Node.js / Puppeteer API
+  - type: web
+    name: jagtap-backend
+    env: docker
+    region: singapore
+    plan: starter # Needs at least starter for 512MB RAM for Puppeteer
+    rootDir: backend
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Set this securely in the Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+
+  # Frontend Vite React App
+  - type: web
+    name: jagtap-frontend
+    env: static
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: jagtap-backend
+          property: host
+          value: https://${host}/api

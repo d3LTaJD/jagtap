@@ -109,14 +109,14 @@ const Navbar = ({ onMenuClick }) => {
     markAsRead(notif._id);
     setShowDropdown(false);
     const id = notif.related_id;
-    if (notif.type?.includes('ENQUIRY') || notif.type?.includes('FOLLOWUP')) {
+    if (notif.type?.includes('TASK')) {
+      navigate('/app/tasks');
+    } else if (notif.type?.includes('ENQUIRY') || notif.type?.includes('FOLLOWUP') || notif.type?.includes('FOLLOW_UP') || notif.type?.includes('REMINDER') || notif.type?.includes('ESCALATION') || notif.type?.includes('URGENT')) {
       navigate(id ? `/app/enquiries/${id}` : '/app/enquiries');
     } else if (notif.type?.includes('QUOTE') || notif.type?.includes('QUOTATION')) {
       navigate(id ? `/app/quotations/${id}` : '/app/quotations');
     } else if (notif.type?.includes('QAP')) {
       navigate(id ? `/app/qaps/${id}` : '/app/qaps');
-    } else if (notif.type?.includes('ESCALATION')) {
-      navigate(id ? `/app/enquiries/${id}` : '/app/enquiries');
     } else {
       navigate('/app');
     }

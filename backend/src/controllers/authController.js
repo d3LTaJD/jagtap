@@ -257,3 +257,16 @@ exports.changePassword = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Get current user profile & latest permissions
+// @route   GET /api/auth/me
+// @access  Private
+exports.getMe = async (req, res) => {
+  try {
+    const responsePayload = await buildLoginResponse(req.user);
+    res.status(200).json(responsePayload);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch user data' });
+  }
+};

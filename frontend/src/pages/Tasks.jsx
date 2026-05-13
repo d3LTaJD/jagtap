@@ -8,6 +8,12 @@ const Tasks = () => {
   const [view, setView] = useState('list'); // 'list' or 'calendar'
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   
   // Filters
   const [showFollowUps, setShowFollowUps] = useState(true);
@@ -53,8 +59,10 @@ const Tasks = () => {
       setShowAddModal(false);
       setNewTaskTitle('');
       fetchEvents();
-    } catch (error) {
-      console.error(error);
+      showToast('Reminder added');
+    } catch (err) {
+      console.error(err);
+      showToast(err.response?.data?.message || 'Error adding reminder', 'error');
     } finally {
       setAddingTask(false);
     }

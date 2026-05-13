@@ -66,6 +66,29 @@ exports.getDashboardStats = async (req, res, next) => {
       ? Math.round((wonCount / (wonCount + lostCount)) * 100)
       : 0;
 
+    // ── Time Series Data (Leads over last 30 days) ───────────────
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const timeSeriesAggregation = await Enquiry.aggregate([
+      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d %b", date: "$createdAt" }
+          },
+          leads: { $sum: 1 },
+          dateRaw: { $first: "$createdAt" }
+        }
+      },
+      { $sort: { dateRaw: 1 } }
+    ]);
+    
+    const timeSeriesData = timeSeriesAggregation.map(item => ({
+      name: item._id,
+      leads: item.leads
+    }));
+
     // ── Recent Activity ────────────────────────────────────────────
     const recentActivity = await FollowUp.find()
       .populate('enquiry', 'enquiryId')
@@ -117,7 +140,8 @@ exports.getDashboardStats = async (req, res, next) => {
           wonValue,
           conversionRate,
           byStatus,
-          byCategory
+          byCategory,
+          timeSeriesData
         },
         recentActivity,
         myTasks: {

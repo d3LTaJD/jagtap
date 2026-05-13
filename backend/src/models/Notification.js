@@ -7,7 +7,9 @@ const notificationSchema = new mongoose.Schema({
     enum: [
       'ENQUIRY_ASSIGNED', 'FOLLOWUP_REMINDER', 'FOLLOWUP_OVERDUE',
       'QUOTE_APPROVAL', 'QUOTATION_ASSIGNED', 'QUOTATION_APPROVED',
-      'QAP_APPROVAL', 'ESCALATION', 'INFO', 'SYSTEM'
+      'QAP_APPROVAL', 'ESCALATION', 'INFO', 'SYSTEM',
+      'TASK_ASSIGNED', 'TASK_COMPLETED',
+      'REMINDER', 'FOLLOW_UP', 'URGENT_LEAD', 'ENQUIRY_LOST'
     ],
     required: true
   },

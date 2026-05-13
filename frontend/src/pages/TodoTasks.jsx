@@ -34,6 +34,12 @@ const Tasks = () => {
   const [formData, setFormData] = useState({ ...emptyForm });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   
   // Filters & Pagination
   const [page, setPage] = useState(1);
@@ -80,8 +86,9 @@ const Tasks = () => {
       setEditingTask(null);
       setFormData({ ...emptyForm });
       fetchTasks();
+      showToast(editingTask ? 'Task updated' : 'Task created');
     } catch (err) {
-      alert(err.response?.data?.message || 'Error saving task');
+      showToast(err.response?.data?.message || 'Error saving task', 'error');
     } finally { setSubmitLoading(false); }
   };
 
@@ -116,6 +123,14 @@ const Tasks = () => {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-bold animate-in slide-in-from-top-2 ${
+          toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+        }`}>
+          {toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+          {toast.msg}
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -331,101 +346,104 @@ const Tasks = () => {
               <button onClick={() => { setShowModal(false); setEditingTask(null); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><X className="w-5 h-5" /></button>
             </div>
             
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Title *</label>
-                <input 
-                  type="text" 
-                  required 
-                  maxLength={200} 
-                  value={formData.title} 
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none" 
-                  placeholder="What needs to be done?" 
-                />
-              </div>
-              
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
-                <textarea 
-                  maxLength={1000} 
-                  value={formData.description} 
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 min-h-[80px] outline-none resize-none" 
-                  placeholder="Add more details about this task..." 
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            {/* Form Wrap */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Due Date *</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Title *</label>
                   <input 
-                    type="date" 
+                    type="text" 
                     required 
-                    value={formData.dueDate} 
-                    onChange={e => setFormData({...formData, dueDate: e.target.value})}
+                    maxLength={200} 
+                    value={formData.title} 
+                    onChange={e => setFormData({...formData, title: e.target.value})}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none" 
+                    placeholder="What needs to be done?" 
                   />
                 </div>
+                
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Due Time</label>
-                  <input 
-                    type="time" 
-                    value={formData.dueTime} 
-                    onChange={e => setFormData({...formData, dueTime: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none" 
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
+                  <textarea 
+                    maxLength={1000} 
+                    value={formData.description} 
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 min-h-[80px] outline-none resize-none" 
+                    placeholder="Add more details about this task..." 
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Due Date *</label>
+                    <input 
+                      type="date" 
+                      required 
+                      value={formData.dueDate} 
+                      onChange={e => setFormData({...formData, dueDate: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Due Time</label>
+                    <input 
+                      type="time" 
+                      value={formData.dueTime} 
+                      onChange={e => setFormData({...formData, dueTime: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Priority</label>
+                    <AutocompleteSelect 
+                      options={['Low','Medium','High','Urgent']} 
+                      value={formData.priority} 
+                      onChange={v => setFormData({...formData, priority: v})} 
+                      placeholder="Select..." 
+                      allowClear={false} 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
+                    <AutocompleteSelect 
+                      options={['To Do','In Progress','Done','Cancelled']} 
+                      value={formData.status} 
+                      onChange={v => setFormData({...formData, status: v})} 
+                      placeholder="Select..." 
+                      allowClear={false} 
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Priority</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assign To</label>
                   <AutocompleteSelect 
-                    options={['Low','Medium','High','Urgent']} 
-                    value={formData.priority} 
-                    onChange={v => setFormData({...formData, priority: v})} 
-                    placeholder="Select..." 
-                    allowClear={false} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
-                  <AutocompleteSelect 
-                    options={['To Do','In Progress','Done','Cancelled']} 
-                    value={formData.status} 
-                    onChange={v => setFormData({...formData, status: v})} 
-                    placeholder="Select..." 
-                    allowClear={false} 
+                    options={userOptions} 
+                    value={formData.assignedTo} 
+                    onChange={v => setFormData({...formData, assignedTo: v})} 
+                    placeholder="Select user..." 
+                    allowClear={true} 
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assign To</label>
-                <AutocompleteSelect 
-                  options={userOptions} 
-                  value={formData.assignedTo} 
-                  onChange={v => setFormData({...formData, assignedTo: v})} 
-                  placeholder="Select user..." 
-                  allowClear={true} 
-                />
+              {/* Fixed Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl flex justify-end gap-3 shrink-0">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm">Cancel</button>
+                <button 
+                  type="submit"
+                  disabled={submitLoading} 
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-lg shadow-brand-500/30 disabled:opacity-70 flex items-center"
+                >
+                  {submitLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} 
+                  {editingTask ? 'Save Changes' : 'Create Task'}
+                </button>
               </div>
-            </div>
-
-            {/* Fixed Footer */}
-            <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl flex justify-end gap-3 shrink-0">
-              <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm">Cancel</button>
-              <button 
-                onClick={handleSubmit} 
-                disabled={submitLoading} 
-                className="px-6 py-2.5 text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-lg shadow-brand-500/30 disabled:opacity-70 flex items-center"
-              >
-                {submitLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} 
-                {editingTask ? 'Save Changes' : 'Create Task'}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

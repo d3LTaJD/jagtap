@@ -60,25 +60,14 @@ const Dashboard = () => {
     wonValue: 0,
     conversionRate: 0,
     byCategory: [],
+    timeSeriesData: [],
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [myTasks, setMyTasks] = useState({ enquiries: [], followUps: [], approvals: [] });
   const [pipeline, setPipeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  // Mock data for the Area Chart since backend doesn't provide time-series yet
-  const mockTimeSeriesData = [
-    { name: '1 May', leads: 50 },
-    { name: '7 May', leads: 140 },
-    { name: '10 May', leads: 180 },
-    { name: '13 May', leads: 250 },
-    { name: '16 May', leads: 310 },
-    { name: '19 May', leads: 280 },
-    { name: '23 May', leads: 440 },
-    { name: '25 May', leads: 300 },
-    { name: '28 May', leads: 220 },
-    { name: '31 May', leads: 180 },
-  ];
+  // mock data removed, using real data from backend
   const canSeeFinancials = ['SA', 'SUPER_ADMIN', 'DIR', 'DIRECTOR', 'ACC', 'ACCOUNTS'].includes(currentUser.role);
 
   useEffect(() => {
@@ -97,6 +86,7 @@ const Dashboard = () => {
           wonValue: s.wonValue || 0,
           conversionRate: s.conversionRate || 0,
           byCategory: s.byCategory || [],
+          timeSeriesData: s.timeSeriesData || [],
         });
         if (res.data.data.recentActivity) setRecentActivity(res.data.data.recentActivity);
         if (res.data.data.myTasks) setMyTasks(res.data.data.myTasks);
@@ -243,23 +233,30 @@ const Dashboard = () => {
           </div>
 
           <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={mockTimeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dx={-10} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#8b5cf6', fontWeight: 'bold' }}
-                />
-                <Area type="monotone" dataKey="leads" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {stats.timeSeriesData && stats.timeSeriesData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={stats.timeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dx={-10} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#8b5cf6', fontWeight: 'bold' }}
+                  />
+                  <Area type="monotone" dataKey="leads" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <Sparkles className="w-8 h-8 mb-2 opacity-20" />
+                <p className="text-sm font-medium">No lead data available for the last 30 days</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

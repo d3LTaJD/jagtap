@@ -27,6 +27,12 @@ const TaskPanel = ({ enquiryId }) => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [userOptions, setUserOptions] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const [form, setForm] = useState({
     title: '', description: '', dueDate: '', dueTime: '', 
@@ -76,8 +82,10 @@ const TaskPanel = ({ enquiryId }) => {
       setShowForm(false);
       setEditingId(null);
       fetchTasks();
+      showToast(editingId ? 'Task updated' : 'Task created');
     } catch (err) {
       console.error(err);
+      showToast('Error saving task', 'error');
     } finally {
       setSaving(false);
     }
@@ -102,7 +110,10 @@ const TaskPanel = ({ enquiryId }) => {
     try {
       await api.delete(`/tasks/${id}`);
       fetchTasks();
-    } catch (err) {}
+      showToast('Task deleted');
+    } catch (err) {
+      showToast('Error deleting task', 'error');
+    }
   };
 
   const cancelForm = () => {
@@ -115,11 +126,22 @@ const TaskPanel = ({ enquiryId }) => {
     try {
       await api.patch(`/tasks/${id}`, { status });
       fetchTasks();
-    } catch(err) {}
+      showToast(`Task marked as ${status}`);
+    } catch(err) {
+      showToast('Error updating status', 'error');
+    }
   };
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-bold animate-in slide-in-from-top-2 ${
+          toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+        }`}>
+          {toast.type === 'error' ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+          {toast.msg}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
           <CheckSquare className="w-4 h-4 text-brand-600" />
