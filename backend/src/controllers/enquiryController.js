@@ -73,6 +73,17 @@ exports.createEnquiry = async (req, res, next) => {
       });
     }
 
+    // 3. SOW 5.4 — Urgent priority: immediate alert to Director + Sales Head
+    if (enquiry.priority === 'Urgent') {
+      await notifyRoles({
+        roles: ['DIR', 'DIRECTOR', 'SALES'],
+        type: 'URGENT_LEAD',
+        title: '🚨 Urgent Lead Alert',
+        message: `Urgent enquiry ${enquiry.enquiryId} — ${customer.companyName} — ${enquiry.productCategory}. Immediate action required.`,
+        related_id: enquiry._id
+      });
+    }
+
     res.status(201).json({ status: 'success', data: { enquiry, customer } });
   } catch (err) {
     next(err);
@@ -145,6 +156,28 @@ exports.updateEnquiry = async (req, res, next) => {
           related_id: enquiry._id 
         });
       }
+
+      // SOW 5.4 — Status changed to Lost → notify Director + Sales Head with reason
+      if (req.body.status === 'Lost') {
+        await notifyRoles({
+          roles: ['DIR', 'DIRECTOR', 'SALES'],
+          type: 'ENQUIRY_LOST',
+          title: 'Enquiry Marked Lost',
+          message: `Enquiry ${enquiry.enquiryId} was lost. Reason: ${enquiry.lostReason || 'Not specified'}.`,
+          related_id: enquiry._id
+        });
+      }
+    }
+
+    // SOW 5.4 — Priority changed to Urgent
+    if (req.body.priority === 'Urgent' && originalEnquiry.priority !== 'Urgent') {
+      await notifyRoles({
+        roles: ['DIR', 'DIRECTOR', 'SALES'],
+        type: 'URGENT_LEAD',
+        title: '🚨 Priority Escalated to Urgent',
+        message: `Enquiry ${enquiry.enquiryId} escalated to URGENT. Immediate action required.`,
+        related_id: enquiry._id
+      });
     }
 
     res.status(200).json({ status: 'success', data: { enquiry } });

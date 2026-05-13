@@ -1,10 +1,13 @@
 const cron = require('node-cron');
 const FollowUp = require('./models/FollowUp');
 const { createNotification } = require('./services/notificationService');
+const { startEnquiryScheduler } = require('./services/enquiryScheduler');
 
 exports.initCronJobs = () => {
   console.log('Cron jobs initialized');
 
+  // SOW 5.4 — Enquiry Alerts & Automation engine
+  startEnquiryScheduler();
   // Run every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     try {
