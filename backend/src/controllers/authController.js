@@ -185,9 +185,19 @@ exports.forgotPassword = async (req, res, next) => {
 
     await Token.create({ user_id: user._id, token: hashedOTP, type: 'OTP', expires_at: expiresAt });
 
-    console.log(`[AUTH MOCK] Forgot password OTP for ${mobile_number}: ${rawOTP}`);
+    const { sendEmail } = require('../services/notificationService');
+    const subject = 'Password Reset OTP - Workflow Automation';
+    const text = `Hello ${user.name},\n\nYou requested a password reset.\nYour OTP is: ${rawOTP}\nIt is valid for 10 minutes.\nIf you did not request this, please ignore this email.`;
 
-    res.status(200).json({ status: 'success', message: 'OTP sent to mobile number' });
+    sendEmail({
+      userId: user._id,
+      subject,
+      text
+    }).catch(err => console.error('[Auth] Background email error:', err.message));
+
+    console.log(`[AUTH] Forgot password OTP for ${mobile_number} requested.`);
+
+    res.status(200).json({ status: 'success', message: 'OTP sent to email address' });
   } catch (err) {
     next(err);
   }
