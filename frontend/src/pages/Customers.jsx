@@ -15,7 +15,7 @@ const Customers = () => {
     companyName: '', customerType: 'Private', primaryContactName: '', designation: '',
     mobileNumber: '', alternateMobile: '', emailAddress: '', alternateEmail: '',
     city: '', state: '', country: 'India', gstin: '', pan: '', paymentTerms: '30 days',
-    creditLimit: 0, isActive: true
+    creditLimit: 0, sourceChannel: '', tags: [], notes: '', isActive: true
   });
 
   const fetchCustomers = async (searchQuery = '') => {
@@ -42,7 +42,7 @@ const Customers = () => {
       companyName: '', customerType: 'Private', primaryContactName: '', designation: '',
       mobileNumber: '', alternateMobile: '', emailAddress: '', alternateEmail: '',
       city: '', state: '', country: 'India', gstin: '', pan: '', paymentTerms: '30 days',
-      creditLimit: 0, isActive: true
+      creditLimit: 0, sourceChannel: '', tags: [], notes: '', isActive: true
     });
     setShowModal(true);
   };
@@ -56,7 +56,8 @@ const Customers = () => {
       emailAddress: c.emailAddress || '', alternateEmail: c.alternateEmail || '',
       city: c.city || '', state: c.state || '', country: c.country || 'India', 
       gstin: c.gstin || '', pan: c.pan || '', paymentTerms: c.paymentTerms || '30 days',
-      creditLimit: c.creditLimit || 0, isActive: c.isActive !== false
+      creditLimit: c.creditLimit || 0, sourceChannel: c.sourceChannel || '',
+      tags: c.tags || [], notes: c.notes || '', isActive: c.isActive !== false
     });
     setShowModal(true);
   };
@@ -187,32 +188,16 @@ const Customers = () => {
             <div className="flex-1 overflow-y-auto p-6">
               <form id="customer-form" onSubmit={handleSubmit} className="space-y-6">
                 
+                {/* --- Company Information --- */}
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100">Company Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Company / Organisation Name *</label>
                     <input type="text" required value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="Acme Corp" />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Primary Contact *</label>
-                    <input type="text" required value={formData.primaryContactName} onChange={e => setFormData({...formData, primaryContactName: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="John Doe" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Designation</label>
-                    <input type="text" value={formData.designation} onChange={e => setFormData({...formData, designation: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="Manager" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number *</label>
-                    <input type="text" required value={formData.mobileNumber} onChange={e => setFormData({...formData, mobileNumber: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="9876543210" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                    <input type="email" value={formData.emailAddress} onChange={e => setFormData({...formData, emailAddress: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="john@acme.com" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer Type</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer Type *</label>
                     <AutocompleteSelect
                       options={['Government', 'Private', 'Export', 'Trader', 'EPC', 'End User']}
                       value={formData.customerType}
@@ -222,7 +207,84 @@ const Customers = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Payment Terms</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Source Channel *</label>
+                    <AutocompleteSelect
+                      options={['IndiaMart', 'OEM', 'Exhibition', 'Reference', 'Email', 'Cold Call', 'Walk-in']}
+                      value={formData.sourceChannel}
+                      onChange={v => setFormData({...formData, sourceChannel: v})}
+                      placeholder="How did you find them?"
+                      allowClear={true}
+                    />
+                  </div>
+                </div>
+
+                {/* --- Contact Details --- */}
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 mt-6">Contact Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Primary Contact Name *</label>
+                    <input type="text" required value={formData.primaryContactName} onChange={e => setFormData({...formData, primaryContactName: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="John Doe" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Designation</label>
+                    <input type="text" value={formData.designation} onChange={e => setFormData({...formData, designation: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="Purchase Manager" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number *</label>
+                    <input type="text" required value={formData.mobileNumber} onChange={e => setFormData({...formData, mobileNumber: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="9876543210" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Alternate Mobile</label>
+                    <input type="text" value={formData.alternateMobile} onChange={e => setFormData({...formData, alternateMobile: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="Optional" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                    <input type="email" value={formData.emailAddress} onChange={e => setFormData({...formData, emailAddress: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="john@acme.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Alternate Email</label>
+                    <input type="email" value={formData.alternateEmail} onChange={e => setFormData({...formData, alternateEmail: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="backup@acme.com" />
+                  </div>
+                </div>
+
+                {/* --- Address & Tax --- */}
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 mt-6">Address & Tax</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                    <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+                    <AutocompleteSelect
+                      options={['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Chandigarh','Delhi','Jammu & Kashmir','Ladakh','Puducherry']}
+                      value={formData.state}
+                      onChange={v => setFormData({...formData, state: v})}
+                      placeholder="Select state..."
+                      allowClear={true}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+                    <input type="text" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">GSTIN <span className="text-slate-400 font-normal">(15-char)</span></label>
+                    <input type="text" maxLength={15} value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value.toUpperCase()})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="27AAACR5055K1ZN" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">PAN <span className="text-slate-400 font-normal">(10-char)</span></label>
+                    <input type="text" maxLength={10} value={formData.pan} onChange={e => setFormData({...formData, pan: e.target.value.toUpperCase()})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="AAACR5055K" />
+                  </div>
+                </div>
+
+                {/* --- Commercial --- */}
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 mt-6">Commercial</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Payment Terms (Default)</label>
                     <AutocompleteSelect
                       options={['Advance', '30 days', '45 days', '60 days', 'LC', 'Against Delivery']}
                       value={formData.paymentTerms}
@@ -231,23 +293,41 @@ const Customers = () => {
                       allowClear={false}
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Credit Limit (INR)</label>
+                    <input type="number" value={formData.creditLimit} onChange={e => setFormData({...formData, creditLimit: Number(e.target.value)})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="0" />
+                  </div>
+                </div>
 
+                {/* --- Tags & Notes --- */}
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 mt-6">Tags & Notes</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">GSTIN</label>
-                    <input type="text" value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="27XXXX" />
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Tags <span className="text-slate-400 font-normal">(for CRM filtering)</span></label>
+                    <AutocompleteSelect
+                      options={['Hot', 'Strategic', 'Government', 'Export', 'Key Account', 'New Lead']}
+                      value={formData.tags?.[0] || ''}
+                      onChange={v => {
+                        const current = formData.tags || [];
+                        if (v && !current.includes(v)) setFormData({...formData, tags: [...current, v]});
+                      }}
+                      placeholder="Add tags..."
+                      allowClear={true}
+                    />
+                    {formData.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {formData.tags.map(tag => (
+                          <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-bold rounded-md border border-brand-200">
+                            {tag}
+                            <button type="button" onClick={() => setFormData({...formData, tags: formData.tags.filter(t => t !== tag)})} className="text-brand-400 hover:text-red-500">&times;</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">PAN</label>
-                    <input type="text" value={formData.pan} onChange={e => setFormData({...formData, pan: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" placeholder="XXXXX1234X" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                    <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
-                    <input type="text" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes</label>
+                    <textarea rows={3} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 resize-none" placeholder="Internal notes only..." />
                   </div>
                 </div>
 

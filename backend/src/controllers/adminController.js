@@ -8,15 +8,22 @@ const { logActivity } = require('../utils/logger');
 // @route   POST /api/admin/users
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, mobile_number, email, role, sendInviteLink } = req.body;
+    const { name, displayName, mobile_number, email, role, secondaryRole, department, loginMethod, sendInviteLink } = req.body;
 
     const existingUser = await User.findOne({ mobile_number });
     if (existingUser) {
       return res.status(400).json({ status: 'error', message: 'User with this mobile number already exists' });
     }
 
+    // Auto-generate USR-NNNN
+    const userCount = (await User.countDocuments()) + 1;
+    const userId = `USR-${String(userCount).padStart(4, '0')}`;
+
     const user = await User.create({
-      name, mobile_number, email, role
+      userId, name, displayName, mobile_number, email, role,
+      secondaryRole: secondaryRole || null,
+      department: department || '',
+      loginMethod: loginMethod || 'password'
     });
 
     // Generate Token (OTP or INVITE)
@@ -98,7 +105,7 @@ exports.toggleUserStatus = async (req, res, next) => {
 // @route   PUT /api/admin/users/:id
 exports.editUser = async (req, res, next) => {
   try {
-    const { name, email, department, role, secondaryRole } = req.body;
+    const { name, displayName, email, department, role, secondaryRole, loginMethod } = req.body;
     
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
@@ -106,10 +113,12 @@ exports.editUser = async (req, res, next) => {
     const originalUser = { ...user.toObject() };
 
     if (name) user.name = name;
+    if (displayName !== undefined) user.displayName = displayName;
     if (email !== undefined) user.email = email;
     if (department !== undefined) user.department = department;
     if (role) user.role = role;
     if (secondaryRole !== undefined) user.secondaryRole = secondaryRole;
+    if (loginMethod !== undefined) user.loginMethod = loginMethod;
 
     await user.save({ validateBeforeSave: false });
 

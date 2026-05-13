@@ -142,10 +142,12 @@ const AdminUsers = () => {
     try {
       await api.put(`/admin/users/${editingUser._id}`, {
         name: editingUser.name,
+        displayName: editingUser.displayName,
         email: editingUser.email,
         department: editingUser.department,
         role: editingUser.role,
-        secondaryRole: editingUser.secondaryRole
+        secondaryRole: editingUser.secondaryRole,
+        loginMethod: editingUser.loginMethod
       });
       setSuccessMsg('User details updated successfully.');
       setEditingUser(null);
@@ -305,7 +307,9 @@ const AdminUsers = () => {
                       </div>
                       <div>
                         <div className="font-bold text-slate-900">{user.name}</div>
-                        <div className="text-slate-500 text-[10px] font-medium tracking-tight">{user.mobile_number} • {user.email || 'No email'}</div>
+                        <div className="text-slate-500 text-[10px] font-medium tracking-tight">
+                          <span className="font-mono text-brand-600">{user.userId || '—'}</span> • {user.mobile_number} • {user.email || 'No email'}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -338,7 +342,7 @@ const AdminUsers = () => {
                         Reset
                       </button>
                       <button 
-                        onClick={() => setEditingUser({...user, secondaryRole: user.secondaryRole || ''})}
+                        onClick={() => setEditingUser({...user, secondaryRole: user.secondaryRole || '', displayName: user.displayName || '', loginMethod: user.loginMethod || 'password'})}
                         className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all font-bold text-xs"
                       >
                         Edit
@@ -385,14 +389,33 @@ const AdminUsers = () => {
             </div>
             
             <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              {editingUser.userId && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">User ID</span>
+                  <span className="font-mono text-sm font-bold text-brand-600">{editingUser.userId}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
                   <input type="text" required value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Display Name <span className="text-slate-400 font-normal">(Short)</span></label>
+                  <input type="text" value={editingUser.displayName || ''} onChange={e => setEditingUser({...editingUser, displayName: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input type="email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                  <input type="email" value={editingUser.email || ''} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Login Method</label>
+                  <AutocompleteSelect
+                    options={[{ value: 'password', label: 'Password' }, { value: 'otp', label: 'OTP (Mobile)' }, { value: 'both', label: 'Both' }]}
+                    value={editingUser.loginMethod || 'password'}
+                    onChange={v => setEditingUser({...editingUser, loginMethod: v})}
+                    allowClear={false}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">System Role</label>

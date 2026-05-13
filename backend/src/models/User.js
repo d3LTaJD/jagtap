@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  userId: { type: String, unique: true, sparse: true },   // USR-NNNN — auto-generated
   name: { type: String, required: true },
   displayName: { type: String },                        // Short name shown in mobile header
   mobile_number: { type: String, required: true, unique: true },
