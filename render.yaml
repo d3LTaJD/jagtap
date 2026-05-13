@@ -4,7 +4,7 @@ services:
     name: jagtap-backend
     env: docker
     region: singapore
-    plan: starter # Needs at least starter for 512MB RAM for Puppeteer
+    plan: free # Note: Free tier has 512MB RAM. Puppeteer might run out of memory occasionally, but usually fine for simple PDFs.
     rootDir: backend
     envVars:
       - key: PORT
