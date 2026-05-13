@@ -12,7 +12,8 @@ const fieldDefinitionSchema = new mongoose.Schema({
       'Text (Short)', 'Text (Long)', 'Number', 'Dropdown (Single)',
       'Dropdown (Multi)', 'Date Picker', 'Date + Time', 'File Upload',
       'Checkbox (Boolean)', 'Radio Button', 'Lookup / Reference',
-      'Signature', 'GPS Location', 'Auto-Calculated', 'Repeating Group'
+      'Signature', 'GPS Location', 'Auto-Calculated', 'Repeating Group',
+      'Rich Text'
     ]
   },
   placeholder: { type: String }, // Hint text inside input

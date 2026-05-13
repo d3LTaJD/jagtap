@@ -11,7 +11,8 @@ const FORM_CONTEXTS = ['Enquiry', 'Quotation', 'QAP', 'Product'];
 const FIELD_TYPES = [
   'Text (Short)', 'Text (Long)', 'Number', 'Dropdown (Single)',
   'Dropdown (Multi)', 'Date Picker', 'Date + Time', 'File Upload',
-  'Checkbox (Boolean)', 'Radio Button', 'Lookup / Reference', 'Auto-Calculated'
+  'Checkbox (Boolean)', 'Radio Button', 'Lookup / Reference', 'Auto-Calculated',
+  'Rich Text', 'Signature', 'GPS Location'
 ];
 
 
@@ -29,6 +30,9 @@ const FIELD_TYPE_ICONS = {
   'Radio Button': '⊙',
   'Lookup / Reference': '🔗',
   'Auto-Calculated': 'ƒ',
+  'Rich Text': 'RT',
+  'Signature': '✍️',
+  'GPS Location': '📍',
 };
 
 const defaultForm = {

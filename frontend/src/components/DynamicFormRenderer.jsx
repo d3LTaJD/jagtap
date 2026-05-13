@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import AutocompleteSelect from './AutocompleteSelect';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import SignatureCanvas from 'react-signature-canvas';
+import { MapPin, Eraser } from 'lucide-react';
 
 /**
  * DynamicFormRenderer
@@ -85,6 +89,16 @@ const DynamicFormRenderer = ({ formContext, values = {}, onChange, readOnly = fa
       font-medium focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors outline-none disabled:bg-slate-100 disabled:text-slate-500`;
 
     if (!canEdit) {
+      if (field.fieldType === 'Rich Text') {
+        return <div className="prose prose-sm max-w-none p-4 bg-slate-50 border border-slate-100 rounded-xl" dangerouslySetInnerHTML={{ __html: val }} />;
+      }
+      if (field.fieldType === 'Signature') {
+        return (
+          <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl h-24 flex items-center justify-center">
+            {val ? <img src={val} alt="Signature" className="max-h-full object-contain" /> : <span className="text-slate-400 italic">No signature</span>}
+          </div>
+        );
+      }
       return (
         <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-700 min-h-[40px] flex items-center">
           {Array.isArray(val) ? val.join(', ') : (val || <span className="text-slate-400 italic">—</span>)}
@@ -254,6 +268,84 @@ const DynamicFormRenderer = ({ formContext, values = {}, onChange, readOnly = fa
           <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 flex items-center gap-2">
             <span>{val || '—'}</span>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-auto">Auto</span>
+          </div>
+        );
+      
+      case 'Rich Text':
+        return (
+          <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
+            <ReactQuill 
+              theme="snow" 
+              value={val} 
+              onChange={v => handle(field.fieldName, v)}
+              className="min-h-[150px]"
+            />
+          </div>
+        );
+
+      case 'Signature':
+        return (
+          <div className="space-y-2">
+            <div className="border border-slate-200 rounded-xl bg-white overflow-hidden h-40 relative group">
+              {val ? (
+                <div className="h-full flex items-center justify-center p-4">
+                  <img src={val} alt="Signature" className="max-h-full object-contain" />
+                  <button 
+                    onClick={() => handle(field.fieldName, '')}
+                    className="absolute top-2 right-2 p-1.5 bg-red-50 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Eraser className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <SignatureCanvas 
+                  penColor="black"
+                  canvasProps={{ className: 'w-full h-full' }}
+                  onEnd={(sig) => {
+                    // Logic to capture ref and get data URL
+                    // Note: In a real app, you'd use a ref. For simplicity here, we'll use a local instance.
+                  }}
+                  ref={(ref) => {
+                    field._sigRef = ref;
+                  }}
+                />
+              )}
+              {!val && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (field._sigRef) {
+                      const dataUrl = field._sigRef.getTrimmedCanvas().toDataURL('image/png');
+                      handle(field.fieldName, dataUrl);
+                    }
+                  }}
+                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-lg shadow-sm"
+                >
+                  Save Signature
+                </button>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'GPS Location':
+        return (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition((pos) => {
+                    handle(field.fieldName, `${pos.coords.latitude}, ${pos.coords.longitude}`);
+                  });
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-xl hover:bg-brand-100 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Capture Current Location
+            </button>
+            <span className="text-xs font-mono text-slate-500">{val || 'Not captured'}</span>
           </div>
         );
 
