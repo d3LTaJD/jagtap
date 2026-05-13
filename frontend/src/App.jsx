@@ -12,7 +12,7 @@ import Quotations from './pages/Quotations';
 import QuotationDetail from './pages/QuotationDetail';
 import Qaps from './pages/Qaps';
 import QapDetail from './pages/QapDetail';
-import LandingPage from './pages/LandingPage';
+
 import ProfileSettings from './pages/ProfileSettings';
 import FieldBuilder from './pages/FieldBuilder';
 import RoleBuilder from './pages/RoleBuilder';
@@ -32,8 +32,8 @@ function App() {
     <AbilityProvider>
       <BrowserRouter>
         <Routes>
-        {/* Landing Page Route */}
-        <Route path="/" element={<LandingPage />} />
+        {/* Redirect root to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         
         {/* Auth */}
         <Route path="/login" element={<Login />} />
@@ -64,7 +64,7 @@ function App() {
           <Route path="audit-logs" element={<AuditLog />} />
         </Route>
         
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
     </AbilityProvider>
