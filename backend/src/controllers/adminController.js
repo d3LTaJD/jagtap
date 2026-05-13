@@ -10,6 +10,10 @@ exports.createUser = async (req, res, next) => {
   try {
     const { name, displayName, mobile_number, email, role, secondaryRole, department, loginMethod, sendInviteLink } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ status: 'error', message: 'Email address is required to receive OTP/invites' });
+    }
+
     const existingUser = await User.findOne({ mobile_number });
     if (existingUser) {
       return res.status(400).json({ status: 'error', message: 'User with this mobile number already exists' });
@@ -107,6 +111,10 @@ exports.editUser = async (req, res, next) => {
   try {
     const { name, displayName, email, department, role, secondaryRole, loginMethod } = req.body;
     
+    if (email === '') {
+      return res.status(400).json({ status: 'error', message: 'Email address cannot be empty' });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
 

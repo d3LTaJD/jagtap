@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   displayName: { type: String },                        // Short name shown in mobile header
   mobile_number: { type: String, required: true, unique: true },
-  email: { type: String, unique: true, sparse: true, lowercase: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String },
   role: { type: String, required: true },
   secondaryRole: { type: String, default: null },
