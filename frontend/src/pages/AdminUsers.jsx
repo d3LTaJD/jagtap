@@ -78,8 +78,7 @@ const AdminUsers = () => {
   const [selectedUserForLogs, setSelectedUserForLogs] = useState(null);
   const [formData, setFormData] = useState({
     name: '', displayName: '', mobile_number: '', email: '',
-    role: '', secondaryRole: '', department: '', loginMethod: 'password',
-    sendInviteLink: false
+    role: '', secondaryRole: '', department: ''
   });
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -117,8 +116,7 @@ const AdminUsers = () => {
       setSuccessMsg('User created successfully and OTP/Invite generated.');
     setFormData({
         name: '', displayName: '', mobile_number: '', email: '',
-        role: 'SALES', secondaryRole: '', department: '', loginMethod: 'password',
-        sendInviteLink: false
+        role: 'SALES', secondaryRole: '', department: ''
       });
       setShowCreate(false);
       fetchUsers();
@@ -146,8 +144,7 @@ const AdminUsers = () => {
         email: editingUser.email,
         department: editingUser.department,
         role: editingUser.role,
-        secondaryRole: editingUser.secondaryRole,
-        loginMethod: editingUser.loginMethod
+        secondaryRole: editingUser.secondaryRole
       });
       setSuccessMsg('User details updated successfully.');
       setEditingUser(null);
@@ -260,24 +257,10 @@ const AdminUsers = () => {
                 allowClear={true}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Login Method</label>
-              <AutocompleteSelect
-                options={[{ value: 'password', label: 'Password' }, { value: 'otp', label: 'OTP (Mobile)' }, { value: 'both', label: 'Both' }]}
-                value={formData.loginMethod}
-                onChange={v => setFormData({...formData, loginMethod: v})}
-                placeholder="Select login method..."
-                allowClear={false}
-              />
-            </div>
-            <div className="md:col-span-2 flex items-center justify-between pt-2">
-              <label className="flex items-center text-sm text-slate-700 cursor-pointer">
-                <input type="checkbox" checked={formData.sendInviteLink} onChange={e => setFormData({...formData, sendInviteLink: e.target.checked})} className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 mr-2 w-4 h-4" />
-                Generate 24h Invite Link instead of 10m OTP
-              </label>
+            <div className="md:col-span-2 flex items-center justify-end pt-2">
               <div className="space-x-3">
                 <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</button>
-                <button type="submit" disabled={loading} className="px-5 py-2 text-sm font-bold text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">Save & Send Auth</button>
+                <button type="submit" disabled={loading} className="px-5 py-2 text-sm font-bold text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors shadow-sm">Save & Send 24h OTP</button>
               </div>
             </div>
           </form>
@@ -342,7 +325,7 @@ const AdminUsers = () => {
                         Reset
                       </button>
                       <button 
-                        onClick={() => setEditingUser({...user, secondaryRole: user.secondaryRole || '', displayName: user.displayName || '', loginMethod: user.loginMethod || 'password'})}
+                        onClick={() => setEditingUser({...user, secondaryRole: user.secondaryRole || '', displayName: user.displayName || ''})}
                         className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all font-bold text-xs"
                       >
                         Edit
@@ -408,15 +391,7 @@ const AdminUsers = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
                   <input type="email" required value={editingUser.email || ''} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Login Method</label>
-                  <AutocompleteSelect
-                    options={[{ value: 'password', label: 'Password' }, { value: 'otp', label: 'OTP (Mobile)' }, { value: 'both', label: 'Both' }]}
-                    value={editingUser.loginMethod || 'password'}
-                    onChange={v => setEditingUser({...editingUser, loginMethod: v})}
-                    allowClear={false}
-                  />
-                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">System Role</label>
                   <AutocompleteSelect

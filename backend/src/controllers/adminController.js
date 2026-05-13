@@ -8,7 +8,7 @@ const { logActivity } = require('../utils/logger');
 // @route   POST /api/admin/users
 exports.createUser = async (req, res, next) => {
   try {
-    const { name, displayName, mobile_number, email, role, secondaryRole, department, loginMethod, sendInviteLink } = req.body;
+    const { name, displayName, mobile_number, email, role, secondaryRole, department } = req.body;
 
     if (!email) {
       return res.status(400).json({ status: 'error', message: 'Email address is required to receive OTP/invites' });
@@ -26,29 +26,26 @@ exports.createUser = async (req, res, next) => {
     const user = await User.create({
       userId, name, displayName, mobile_number, email, role,
       secondaryRole: secondaryRole || null,
-      department: department || '',
-      loginMethod: loginMethod || 'password'
+      department: department || ''
     });
 
-    // Generate Token (OTP or INVITE)
-    const rawToken = sendInviteLink ? otpUtils.generateInviteToken() : otpUtils.generateOTP();
+    // Always generate OTP
+    const rawToken = otpUtils.generateOTP();
     const hashedToken = await otpUtils.hashToken(rawToken);
     
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + (sendInviteLink ? 24 * 60 : 10)); // 24 hours or 10 mins
+    expiresAt.setMinutes(expiresAt.getMinutes() + (24 * 60)); // 24 hours
 
     await Token.create({
       user_id: user._id,
       token: hashedToken,
-      type: sendInviteLink ? 'INVITE' : 'OTP',
+      type: 'OTP',
       expires_at: expiresAt
     });
 
     const { sendEmail } = require('../services/notificationService');
-    const subject = sendInviteLink ? 'Account Invite - Workflow Automation' : 'Account Setup OTP - Workflow Automation';
-    const text = sendInviteLink 
-      ? `Hello ${name},\n\nYou have been invited to join the workflow automation system.\nYour invite token is: ${rawToken}\n\nPlease visit the verify page to set your password.`
-      : `Hello ${name},\n\nYour account has been created. Your setup OTP is: ${rawToken}\nIt is valid for 10 minutes.`;
+    const subject = 'Account Setup OTP - Workflow Automation';
+    const text = `Hello ${name},\n\nYour account has been created.\nYour setup OTP is: ${rawToken}\nIt is valid for 24 hours.\nIf it expires, you will need to request a new one from the administrator.`;
 
     await sendEmail({
       userId: user._id,
@@ -109,7 +106,7 @@ exports.toggleUserStatus = async (req, res, next) => {
 // @route   PUT /api/admin/users/:id
 exports.editUser = async (req, res, next) => {
   try {
-    const { name, displayName, email, department, role, secondaryRole, loginMethod } = req.body;
+    const { name, displayName, email, department, role, secondaryRole } = req.body;
     
     if (email === '') {
       return res.status(400).json({ status: 'error', message: 'Email address cannot be empty' });
@@ -126,7 +123,6 @@ exports.editUser = async (req, res, next) => {
     if (department !== undefined) user.department = department;
     if (role) user.role = role;
     if (secondaryRole !== undefined) user.secondaryRole = secondaryRole;
-    if (loginMethod !== undefined) user.loginMethod = loginMethod;
 
     await user.save({ validateBeforeSave: false });
 
