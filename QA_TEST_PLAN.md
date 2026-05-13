@@ -17,9 +17,9 @@
 
 ### Test Credentials
 
-| Role | Mobile Number | Password | Access Level |
+| Role | Email | Password | Access Level |
 |---|---|---|---|
-| Super Admin (SA) | `9999999999` | `Admin@123` | Full system access |
+| Super Admin (SA) | `admin@jagtap.com` | `admin@jagtap.com` | Full system access |
 
 > **Note**: After logging in as Super Admin, create additional test users (Director, Sales, QC, etc.) via Admin → Users page to test RBAC.
 
@@ -30,8 +30,8 @@
 ### TC-1.1: Login with valid credentials
 - **Steps**:
   1. Navigate to `/login`
-  2. Enter mobile: `9999999999`
-  3. Enter password: `Admin@123`
+  2. Enter email: `admin@jagtap.com`
+  3. Enter password: `admin@jagtap.com`
   4. Click "Sign In"
 - **Expected**: Redirect to `/app/dashboard`. Username visible in sidebar/header.
 - **Result**: ☐ Pass ☐ Fail
@@ -39,7 +39,7 @@
 ### TC-1.2: Login with invalid password
 - **Steps**:
   1. Navigate to `/login`
-  2. Enter mobile: `9999999999`
+  2. Enter email: `admin@jagtap.com`
   3. Enter password: `WrongPassword`
   4. Click "Sign In"
 - **Expected**: Error message "Invalid credentials" displayed. No redirect.
@@ -47,7 +47,7 @@
 
 ### TC-1.3: Login with non-existent user
 - **Steps**:
-  1. Enter mobile: `1111111111`
+  1. Enter email: `nonexistent@test.com`
   2. Enter any password
   3. Click "Sign In"
 - **Expected**: Error message displayed. No redirect.
