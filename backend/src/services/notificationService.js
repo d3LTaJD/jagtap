@@ -5,8 +5,9 @@ const Role = require('../models/Role');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
+  port: 587,
+  secure: false, // upgrade later with STARTTLS
+  requireTLS: true,
   auth: { 
     user: process.env.EMAIL_USER || 'dummy@gmail.com', 
     pass: process.env.EMAIL_PASS || 'dummy' 
