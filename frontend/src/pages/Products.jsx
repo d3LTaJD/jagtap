@@ -5,6 +5,7 @@ import AutocompleteSelect from '../components/AutocompleteSelect';
 import { useAbility } from '../context/AbilityContext';
 
 const Products = () => {
+  const ability = useAbility();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
