@@ -4,17 +4,24 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 587,
-  secure: false, // upgrade later with STARTTLS
-  requireTLS: true,
-  auth: { 
-    user: process.env.EMAIL_USER || 'dummy@gmail.com', 
-    pass: process.env.EMAIL_PASS || 'dummy' 
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
-  socketTimeout: 15000
+  socketTimeout: 15000,
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP VERIFY ERROR:", error);
+  } else {
+    console.log("SMTP SERVER READY");
+  }
 });
 
 exports.createNotification = async ({ user_id, type, title, message, related_id }) => {
@@ -23,7 +30,7 @@ exports.createNotification = async ({ user_id, type, title, message, related_id 
     const notif = await Notification.create({ user_id, type, title, message, related_id });
     console.log(`[Notification] Created: "${title}" for user ${user_id}`);
     return notif;
-  } catch(err) { console.error('[Notification] Error creating notification:', err.message); }
+  } catch (err) { console.error('[Notification] Error creating notification:', err.message); }
 };
 
 exports.sendEmail = async ({ userId, subject, text }) => {
@@ -36,10 +43,10 @@ exports.sendEmail = async ({ userId, subject, text }) => {
       console.log(`Subject: ${subject}`);
       console.log(`Body: \n${text}`);
       console.log(`==================================\n`);
-      return; 
+      return;
     }
     await transporter.sendMail({ from: process.env.EMAIL_USER, to: u.email, subject, text });
-  } catch(err) { console.error('[Email] Error sending email:', err.message); }
+  } catch (err) { console.error('[Email] Error sending email:', err.message); }
 };
 
 /**
@@ -55,7 +62,7 @@ exports.notifyRoles = async ({ roles, type, title, message, related_id }) => {
 
     // Strategy 1: Direct match on user.role field
     const users = await User.find({ is_active: true });
-    
+
     // Strategy 2: Also look up Role documents to find matching codes
     const matchingRoles = await Role.find({
       $or: [
@@ -70,9 +77,9 @@ exports.notifyRoles = async ({ roles, type, title, message, related_id }) => {
     for (const u of users) {
       const userRole = (u.role || '').toUpperCase();
       const shouldNotify = normalizedRoles.includes(userRole) ||
-                           matchingRoleCodes.includes(u.role) ||
-                           matchingRoleNames.includes(u.role);
-      
+        matchingRoleCodes.includes(u.role) ||
+        matchingRoleNames.includes(u.role);
+
       if (shouldNotify) {
         await exports.createNotification({ user_id: u._id, type, title, message, related_id });
         notifiedCount++;
@@ -82,5 +89,5 @@ exports.notifyRoles = async ({ roles, type, title, message, related_id }) => {
     if (notifiedCount > 0) {
       console.log(`[Notification] notifyRoles: Notified ${notifiedCount} user(s) for roles [${roles.join(', ')}]`);
     }
-  } catch(err) { console.error('[Notification] notifyRoles error:', err.message); }
+  } catch (err) { console.error('[Notification] notifyRoles error:', err.message); }
 };
