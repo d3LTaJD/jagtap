@@ -19,7 +19,7 @@
 
 | Role | Email | Password | Access Level |
 |---|---|---|---|
-| Super Admin (SA) | `admin@jagtap.com` | `admin@jagtap.com` | Full system access |
+| Super Admin (SA) | `admin@jagtap.com` | `adminpassword123` | Full system access |
 
 > **Note**: After logging in as Super Admin, create additional test users (Director, Sales, QC, etc.) via Admin → Users page to test RBAC.
 
@@ -31,7 +31,7 @@
 - **Steps**:
   1. Navigate to `/login`
   2. Enter email: `admin@jagtap.com`
-  3. Enter password: `admin@jagtap.com`
+  3. Enter password: `adminpassword123`
   4. Click "Sign In"
 - **Expected**: Redirect to `/app/dashboard`. Username visible in sidebar/header.
 - **Result**: ☐ Pass ☐ Fail
