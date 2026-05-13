@@ -47,11 +47,12 @@ exports.createUser = async (req, res, next) => {
     const subject = 'Account Setup OTP - Workflow Automation';
     const text = `Hello ${name},\n\nYour account has been created.\nYour setup OTP is: ${rawToken}\nIt is valid for 24 hours.\nIf it expires, you will need to request a new one from the administrator.`;
 
-    await sendEmail({
+    // Send email asynchronously without blocking the response
+    sendEmail({
       userId: user._id,
       subject,
       text
-    });
+    }).catch(err => console.error('[Admin] Background email error:', err.message));
 
     res.status(201).json({ 
       status: 'success', 

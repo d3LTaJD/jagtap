@@ -5,7 +5,10 @@ const Role = require('../models/Role');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail', 
-  auth: { user: process.env.EMAIL_USER || 'dummy@gmail.com', pass: process.env.EMAIL_PASS || 'dummy' }
+  auth: { user: process.env.EMAIL_USER || 'dummy@gmail.com', pass: process.env.EMAIL_PASS || 'dummy' },
+  connectionTimeout: 10000, // 10 seconds to fail fast if connection hangs
+  greetingTimeout: 10000,
+  socketTimeout: 15000
 });
 
 exports.createNotification = async ({ user_id, type, title, message, related_id }) => {
