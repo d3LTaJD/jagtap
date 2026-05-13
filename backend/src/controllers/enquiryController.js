@@ -22,10 +22,17 @@ exports.createEnquiry = async (req, res, next) => {
     enquiryData.createdBy = req.user._id;
     enquiryData.assignedTo = enquiryData.assignedTo || req.user._id;
     
-    // Generate simple ID logic
+    // Generate sequential ENQ-YYYY-MM-NNNN ID
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    enquiryData.enquiryId = `ENQ-${year}-${month}-${Math.floor(Math.random() * 10000)}`;
+    const prefix = `ENQ-${year}-${month}-`;
+    const lastEnquiry = await Enquiry.findOne({ enquiryId: { $regex: `^${prefix}` } }).sort({ enquiryId: -1 });
+    let seq = 1;
+    if (lastEnquiry) {
+      const lastSeq = parseInt(lastEnquiry.enquiryId.split('-').pop(), 10);
+      if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    }
+    enquiryData.enquiryId = `${prefix}${String(seq).padStart(4, '0')}`;
 
     const enquiry = await Enquiry.create(enquiryData);
 

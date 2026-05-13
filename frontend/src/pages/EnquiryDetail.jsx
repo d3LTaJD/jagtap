@@ -20,13 +20,15 @@ const PRIORITY_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-  NEW:          { color: 'bg-blue-100 text-blue-700',     label: 'New'        },
-  CONTACTED:    { color: 'bg-violet-100 text-violet-700', label: 'Contacted'  },
-  QUALIFIED:    { color: 'bg-cyan-100 text-cyan-700',     label: 'Qualified'  },
-  WON:          { color: 'bg-emerald-100 text-emerald-700', label: 'Won ✓'   },
-  LOST:         { color: 'bg-red-100 text-red-700',       label: 'Lost'       },
-  'On Hold':    { color: 'bg-amber-100 text-amber-700',   label: 'On Hold'    },
-  ABANDONED:    { color: 'bg-slate-100 text-slate-500',   label: 'Abandoned'  },
+  'New':              { color: 'bg-blue-100 text-blue-700',       label: 'New'              },
+  'Contacted':        { color: 'bg-violet-100 text-violet-700',   label: 'Contacted'        },
+  'Technical Review': { color: 'bg-cyan-100 text-cyan-700',       label: 'Technical Review' },
+  'Quoted':           { color: 'bg-purple-100 text-purple-700',   label: 'Quoted'           },
+  'Negotiating':      { color: 'bg-indigo-100 text-indigo-700',   label: 'Negotiating'      },
+  'Won':              { color: 'bg-emerald-100 text-emerald-700', label: 'Won ✓'            },
+  'Lost':             { color: 'bg-red-100 text-red-700',         label: 'Lost'             },
+  'On Hold':          { color: 'bg-amber-100 text-amber-700',     label: 'On Hold'          },
+  'Abandoned':        { color: 'bg-slate-100 text-slate-500',     label: 'Abandoned'        },
 };
 
 const Toast = ({ msg, type, onClose }) => (
@@ -228,7 +230,7 @@ const EnquiryDetail = () => {
     <div className="p-8 text-center text-slate-500">Enquiry not found.</div>
   );
 
-  const statusCfg   = STATUS_CONFIG[enquiry.status]   || STATUS_CONFIG['NEW'];
+  const statusCfg   = STATUS_CONFIG[enquiry.status]   || STATUS_CONFIG['New'];
   const priorityCfg = PRIORITY_CONFIG[enquiry.priority] || PRIORITY_CONFIG['Medium'];
 
   return (
@@ -263,13 +265,15 @@ const EnquiryDetail = () => {
               {showStatusMenu && (
                 <div className="absolute top-full mt-1 left-0 z-20 bg-white rounded-xl shadow-xl border border-slate-200 w-44 py-1 animate-in slide-in-from-top-1">
                   {[
-                    { v: 'NEW',       icon: Tag,        label: 'New' },
-                    { v: 'CONTACTED', icon: UserCheck,   label: 'Contacted' },
-                    { v: 'QUALIFIED', icon: CheckCircle2,label: 'Qualified' },
-                    { v: 'WON',       icon: Trophy,      label: 'Won ✓',    cls: 'text-emerald-600' },
-                    { v: 'LOST',      icon: XCircle,     label: 'Lost',     cls: 'text-red-600' },
-                    { v: 'On Hold',   icon: PauseCircle, label: 'On Hold',  cls: 'text-amber-600' },
-                    { v: 'ABANDONED', icon: AlertTriangle,label: 'Abandoned', cls: 'text-slate-500' },
+                    { v: 'New',              icon: Tag,          label: 'New' },
+                    { v: 'Contacted',        icon: UserCheck,    label: 'Contacted' },
+                    { v: 'Technical Review', icon: CheckCircle2, label: 'Technical Review' },
+                    { v: 'Quoted',           icon: Flag,         label: 'Quoted' },
+                    { v: 'Negotiating',      icon: Flag,         label: 'Negotiating',  cls: 'text-indigo-600' },
+                    { v: 'Won',              icon: Trophy,       label: 'Won ✓',        cls: 'text-emerald-600' },
+                    { v: 'Lost',             icon: XCircle,      label: 'Lost',         cls: 'text-red-600' },
+                    { v: 'On Hold',          icon: PauseCircle,  label: 'On Hold',      cls: 'text-amber-600' },
+                    { v: 'Abandoned',        icon: AlertTriangle, label: 'Abandoned',   cls: 'text-slate-500' },
                   ].map(s => (
                     <button key={s.v} onClick={() => markStatus(s.v)}
                       className={`flex items-center gap-2 w-full px-4 py-2.5 text-sm font-bold hover:bg-slate-50 ${s.cls || 'text-slate-700'} ${enquiry.status === s.v ? 'bg-brand-50' : ''}`}>

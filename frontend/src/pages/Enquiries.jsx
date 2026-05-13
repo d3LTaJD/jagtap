@@ -52,6 +52,7 @@ const Enquiries = () => {
     budgetFrom: '', budgetTo: '', estimatedValue: '',
     standardCode: '', thirdPartyInspection: false, specialRequirements: '',
     leadGenuineness: 'Likely Genuine', detailsSharedByLead: false, indiaMartContactMethod: 'Call',
+    internalNotes: '',
     dynamicFields: {}
   });
   const [editingEnquiry, setEditingEnquiry] = useState(null); // null = create mode; enquiry object = edit mode
@@ -103,6 +104,7 @@ const Enquiries = () => {
           standardCode: formData.standardCode,
           thirdPartyInspection: formData.thirdPartyInspection,
           specialRequirements: formData.specialRequirements,
+          internalNotes: formData.internalNotes,
           dynamicFields: dynamicObj
         });
       } else {
@@ -138,6 +140,7 @@ const Enquiries = () => {
             standardCode: formData.standardCode,
             thirdPartyInspection: formData.thirdPartyInspection,
             specialRequirements: formData.specialRequirements,
+            internalNotes: formData.internalNotes,
             priority: formData.priority,
             dynamicFields: dynamicObj
           }
@@ -156,6 +159,7 @@ const Enquiries = () => {
         budgetFrom: '', budgetTo: '', estimatedValue: '',
         standardCode: '', thirdPartyInspection: false, specialRequirements: '',
         leadGenuineness: 'Likely Genuine', detailsSharedByLead: false, indiaMartContactMethod: 'Call',
+        internalNotes: '',
         dynamicFields: {}
       });
     } catch(err) {
@@ -202,6 +206,7 @@ const Enquiries = () => {
       leadGenuineness: enq.leadGenuineness || 'Likely Genuine',
       detailsSharedByLead: enq.detailsSharedByLead || false,
       indiaMartContactMethod: enq.indiaMartContactMethod || 'Call',
+      internalNotes: enq.internalNotes || '',
       dynamicFields: enq.dynamicFields || {},
     });
     setShowNewModal(true);
@@ -288,7 +293,7 @@ const Enquiries = () => {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
             <AutocompleteSelect
-              options={['NEW','CONTACTED','QUALIFIED','Technical Review','Quoted','Negotiating','Won','On Hold','Abandoned','LOST']}
+              options={['New','Contacted','Technical Review','Quoted','Negotiating','Won','Lost','On Hold','Abandoned']}
               value={filterStatus}
               onChange={v => setFilterStatus(v)}
               placeholder="All Statuses"
@@ -602,6 +607,15 @@ const Enquiries = () => {
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Special Requirements</label>
                       <textarea maxLength="400" value={formData.specialRequirements} onChange={e => setFormData({...formData, specialRequirements: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 min-h-[60px]" placeholder="Max 400 chars"></textarea>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Estimated Value (₹) <span className="text-slate-400 font-normal">(Internal)</span></label>
+                      <input type="number" min="0" value={formData.estimatedValue} onChange={e => setFormData({...formData, estimatedValue: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="Rough pipeline estimate" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Internal Notes <span className="text-slate-400 font-normal">(Not visible on documents)</span></label>
+                      <textarea maxLength="300" value={formData.internalNotes} onChange={e => setFormData({...formData, internalNotes: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 min-h-[60px]" placeholder="Max 300 chars"></textarea>
                     </div>
 
                   </div>
