@@ -21,7 +21,7 @@ const Login = () => {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user || {}));
-        navigate('/app');
+        window.location.href = '/app';
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to login. Please try again or check your credentials.');
