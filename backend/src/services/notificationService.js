@@ -1,28 +1,9 @@
 const Notification = require('../models/Notification');
-const nodemailer = require('nodemailer');
+
 const User = require('../models/User');
 const Role = require('../models/Role');
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
-
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("SMTP VERIFY ERROR:", error);
-  } else {
-    console.log("SMTP SERVER READY");
-  }
-});
+// Nodemailer removed in favor of Brevo HTTP API to bypass Render SMTP blocking.
 
 exports.createNotification = async ({ user_id, type, title, message, related_id }) => {
   try {
@@ -37,16 +18,40 @@ exports.sendEmail = async ({ userId, subject, text }) => {
   try {
     const u = await User.findById(userId);
     if (!u || !u.email) return;
-    if (!process.env.EMAIL_USER) {
+
+    if (!process.env.BREVO_API_KEY) {
       console.log(`\n========== [Email Mock] ==========`);
-      console.log(`To: ${u.email}`);
-      console.log(`Subject: ${subject}`);
-      console.log(`Body: \n${text}`);
+      console.log(`To: ${u.email}\nSubject: ${subject}\nBody: \n${text}`);
       console.log(`==================================\n`);
-      return;
+      return; 
     }
-    await transporter.sendMail({ from: process.env.EMAIL_USER, to: u.email, subject, text });
-  } catch (err) { console.error('[Email] Error sending email:', err.message); }
+
+    const payload = {
+      sender: { name: "Jagtap Workflow System", email: process.env.EMAIL_USER || "datawhiz.ai@gmail.com" },
+      to: [{ email: u.email }],
+      subject: subject,
+      textContent: text
+    };
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errData = await response.text();
+      console.error('[Email] Brevo API Error:', errData);
+    } else {
+      console.log(`[Email] Successfully sent via Brevo to ${u.email}`);
+    }
+  } catch (err) {
+    console.error('[Email] Error sending email via Brevo:', err.message);
+  }
 };
 
 /**
